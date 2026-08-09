@@ -1,0 +1,2087 @@
+﻿<title>Virtual Zen Garden — Interactive Prototype</title>
+<style>
+  :root {
+    --paper: #E7E4DC; --paper-raised: #F2EFE7; --ink: #232922; --ink-soft: #57604C;
+    --moss: #4C5C41; --moss-deep: #3A4732; --clay: #8C5F3C; --water: #5C7B74;
+    --line: rgba(35,41,34,0.16); --shadow: rgba(35,41,34,0.16);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #171912; --paper-raised: #1F2318; --ink: #E7E3D6; --ink-soft: #A9AC9C;
+      --moss: #92A67F; --moss-deep: #B7C6A7; --clay: #CB9A6A; --water: #9FBAB2;
+      --line: rgba(231,227,214,0.16); --shadow: rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #171912; --paper-raised: #1F2318; --ink: #E7E3D6; --ink-soft: #A9AC9C;
+    --moss: #92A67F; --moss-deep: #B7C6A7; --clay: #CB9A6A; --water: #9FBAB2;
+    --line: rgba(231,227,214,0.16); --shadow: rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"] {
+    --paper: #E7E4DC; --paper-raised: #F2EFE7; --ink: #232922; --ink-soft: #57604C;
+    --moss: #4C5C41; --moss-deep: #3A4732; --clay: #8C5F3C; --water: #5C7B74;
+    --line: rgba(35,41,34,0.16); --shadow: rgba(35,41,34,0.16);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .stage { min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 40px 16px 64px; }
+  .stage-title { text-align: center; max-width: 500px; }
+  .stage-title h1 {
+    font-family: "Iowan Old Style", "Songti SC", "Noto Serif SC", Georgia, serif;
+    font-size: 1.5rem; margin: 0 0 6px; text-wrap: balance;
+  }
+  .stage-title p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+
+  .phone { width: 380px; max-width: 94vw; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 34px; padding: 12px; box-shadow: 0 24px 60px var(--shadow); }
+  .phone-inner { border-radius: 24px; overflow: hidden; background: var(--paper); position: relative; }
+
+  .app-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; }
+  .app-title { display: flex; align-items: baseline; gap: 8px; }
+  .app-title h2 { font-family: "Iowan Old Style", "Songti SC", "Noto Serif SC", Georgia, serif; font-size: 1.2rem; margin: 0; }
+  .season-badge { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--water); background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; padding: 3px 9px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .icon-btn svg { width: 17px; height: 17px; }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn:focus-visible, .tool-btn:focus-visible, .tab-btn:focus-visible, .swatch-btn:focus-visible, .action-btn:focus-visible, .material-btn:focus-visible, .season-btn:focus-visible, .view-btn:focus-visible { outline: 2px solid var(--water); outline-offset: 2px; }
+
+  .view-strip { display: flex; gap: 6px; padding: 0 16px 10px; }
+  .view-btn { flex: 1; font-family: inherit; font-size: 0.82rem; padding: 8px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .view-btn.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  .season-strip { display: flex; gap: 6px; padding: 0 16px 8px; }
+  .season-btn { flex: 1; font-family: inherit; font-size: 0.78rem; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .season-btn.active { background: var(--moss); border-color: var(--moss); color: var(--paper); }
+
+  .material-strip { display: flex; gap: 6px; padding: 0 16px 12px; }
+  .material-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 0.72rem; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .material-btn.active { border-color: var(--moss); background: var(--paper-raised); color: var(--ink); }
+  .material-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0,0,0,0.18); flex-shrink: 0; }
+
+  .canvas-wrap { position: relative; margin: 0 12px; border-radius: 14px; overflow: hidden; }
+  .canvas-wrap canvas { width: 100%; height: auto; display: block; touch-action: none; cursor: crosshair; transition: filter 0.5s ease; }
+  .canvas-wrap.ghost-cursor canvas { cursor: none; }
+  .canvas-wrap.night canvas { filter: brightness(0.52) saturate(0.7) hue-rotate(-6deg); }
+  .stars { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+  .canvas-wrap.night .stars { opacity: 1; }
+  .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; }
+  .particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .particle { position: absolute; top: -6%; width: 8px; height: 8px; animation: fall linear infinite; }
+  .particle.petal { background: #F1B6C4; border-radius: 60% 40% 60% 40%; }
+  .particle.leaf { background: #C97A3D; border-radius: 2px 8px; }
+  .particle.snow { background: #FFFFFF; border-radius: 50%; box-shadow: 0 0 3px rgba(255,255,255,0.8); }
+  @keyframes fall { from { transform: translateY(-10%) translateX(0) rotate(0deg); opacity: 0.9; } to { transform: translateY(720%) translateX(var(--drift)) rotate(160deg); opacity: 0.15; } }
+  @media (prefers-reduced-motion: reduce) { .particle { animation: none; display: none; } }
+
+  .cursor-ghost { position: absolute; top: 0; left: 0; width: 26px; height: 26px; pointer-events: none; opacity: 0; transition: opacity 0.12s; color: #232922; filter: drop-shadow(0 1px 1.5px rgba(255,255,255,0.7)) drop-shadow(0 -1px 1px rgba(0,0,0,0.25)); z-index: 5; }
+  .canvas-wrap:not(.ghost-cursor) .cursor-ghost { display: none; }
+  .cursor-ghost svg { width: 100%; height: 100%; }
+
+  .tool-dock { display: flex; gap: 6px; padding: 12px 12px 4px; }
+  .tool-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 1px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); cursor: pointer; font-family: inherit; font-size: 0.6rem; }
+  .tool-btn svg { width: 17px; height: 17px; }
+  .tool-btn.active { color: var(--paper); background: var(--moss); border-color: var(--moss); }
+
+  .variant-row { display: flex; gap: 6px; padding: 6px 12px 4px; flex-wrap: wrap; min-height: 1px; }
+  .swatch-btn { font-family: inherit; font-size: 0.72rem; padding: 5px 11px; border-radius: 14px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .swatch-btn.active { background: var(--water); border-color: var(--water); color: #fff; }
+
+  .action-dock { display: flex; gap: 8px; padding: 8px 12px 4px; flex-wrap: wrap; }
+  .action-btn { display: flex; align-items: center; gap: 5px; font-family: inherit; font-size: 0.74rem; padding: 6px 13px; border-radius: 16px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .action-btn svg { width: 15px; height: 15px; }
+  .action-btn.record-btn { color: var(--clay); border-color: var(--clay); }
+  .action-btn.record-btn.recording { color: #fff; background: var(--clay); }
+
+  .record-status { display: flex; align-items: center; gap: 6px; padding: 0 16px 8px; font-size: 0.76rem; color: var(--clay); }
+  .record-status.hidden { display: none; }
+  .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--clay); animation: pulse 1s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  .clip-result { margin: 0 16px 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-raised); }
+  .clip-result.hidden { display: none; }
+  .clip-result video { width: 100%; border-radius: 8px; display: block; margin-bottom: 10px; background: #000; }
+  .clip-actions { display: flex; gap: 8px; }
+
+  .ghost-note { padding: 0 16px 16px; font-size: 0.78rem; color: var(--ink-soft); }
+
+  .tab-bar { display: flex; border-top: 1px solid var(--line); }
+  .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 12px; background: none; border: none; color: var(--ink-soft); font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+  .tab-btn svg { width: 19px; height: 19px; }
+  .tab-btn.active { color: var(--moss); }
+
+  .screen.hidden, .view.hidden { display: none; }
+
+  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px; }
+  .shop-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--paper-raised); display: flex; flex-direction: column; gap: 6px; }
+  .shop-swatch { height: 46px; border-radius: 8px; }
+  .shop-name { font-size: 0.86rem; font-weight: 600; }
+  .shop-price { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.72rem; color: var(--water); }
+  .shop-price.locked { color: var(--clay); }
+  .shop-btn { margin-top: 2px; font-family: inherit; font-size: 0.76rem; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .shop-plus-banner { margin: 4px 16px 0; padding: 12px 14px; border-radius: 12px; background: var(--moss); color: var(--paper); font-size: 0.82rem; }
+  .shop-plus-banner strong { display: block; font-family: "Iowan Old Style", "Songti SC", Georgia, serif; font-size: 1rem; margin-bottom: 2px; }
+
+  .settings-list { padding: 8px 16px 20px; display: flex; flex-direction: column; gap: 18px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .settings-row-label { font-size: 0.9rem; }
+  .settings-row-sub { font-size: 0.76rem; color: var(--ink-soft); margin-top: 2px; }
+  .switch { position: relative; width: 42px; height: 24px; border-radius: 12px; background: var(--line); border: none; cursor: pointer; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--paper-raised); transition: transform 0.2s; box-shadow: 0 1px 2px var(--shadow); }
+  .switch.on { background: var(--moss); }
+  .switch.on::after { transform: translateX(18px); }
+  input[type="range"] { width: 130px; accent-color: var(--moss); }
+  .settings-divider { border: none; border-top: 1px solid var(--line); margin: 0; }
+  .reset-btn { font-family: inherit; font-size: 0.82rem; color: var(--clay); background: none; border: 1px solid var(--line); border-radius: 20px; padding: 8px 16px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .reset-btn:hover { background: var(--paper); }
+  .about-note { font-size: 0.78rem; color: var(--ink-soft); }
+
+  .toast { position: absolute; left: 16px; right: 16px; bottom: 78px; background: var(--ink); color: var(--paper); font-size: 0.82rem; padding: 10px 14px; border-radius: 10px; opacity: 0; transform: translateY(6px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 20; }
+  .toast.show { opacity: 0.96; transform: translateY(0); }
+
+  .levels-sub.hidden { display: none; }
+  .levels-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 8px; }
+  .levels-header h3 { margin: 0; font-family: "Iowan Old Style", "Songti SC", Georgia, serif; font-size: 1rem; }
+  .levels-header .link-btn { font-family: inherit; font-size: 0.78rem; color: var(--water); background: none; border: none; cursor: pointer; }
+  .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px 16px 16px; }
+  .level-node { position: relative; aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-raised); display: flex; align-items: center; justify-content: center; font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; }
+  .level-node.completed { background: var(--moss); color: var(--paper); border-color: var(--moss); }
+  .level-node.locked { opacity: 0.38; cursor: default; }
+  .level-node .star { position: absolute; top: 1px; right: 3px; font-size: 0.5rem; }
+
+  .level-play-head { display: flex; align-items: center; gap: 10px; padding: 6px 16px 8px; }
+  .level-play-head .link-btn { font-family: inherit; font-size: 0.8rem; color: var(--water); background: none; border: none; cursor: pointer; padding: 0; }
+  .level-play-head h3 { margin: 0; font-size: 0.95rem; font-family: "Iowan Old Style", "Songti SC", Georgia, serif; flex: 1; text-align: center; }
+  .progress-wrap { display: flex; align-items: center; gap: 8px; padding: 0 16px 10px; }
+  .progress-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--moss); transition: width 0.2s; }
+  .progress-label { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.7rem; color: var(--ink-soft); width: 34px; text-align: right; }
+
+  .win-overlay { position: absolute; inset: 0; background: rgba(18,20,15,0.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #fff; text-align: center; padding: 20px; z-index: 15; }
+  .win-overlay.hidden { display: none; }
+  .win-overlay h3 { margin: 0; font-family: "Iowan Old Style", "Songti SC", Georgia, serif; font-size: 1.1rem; }
+  .win-card canvas { width: 150px; border-radius: 10px; box-shadow: 0 14px 34px rgba(0,0,0,0.45); }
+  .win-actions { display: flex; gap: 10px; }
+  .win-actions button { font-family: inherit; font-size: 0.82rem; padding: 8px 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.4); background: transparent; color: #fff; cursor: pointer; }
+  .win-actions button.primary { background: var(--moss); border-color: var(--moss); }
+
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px 16px 18px; }
+  .card-thumb { border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--paper-raised); aspect-ratio: 5/7; display: flex; align-items: center; justify-content: center; }
+  .card-thumb canvas { width: 100%; height: 100%; display: block; }
+  .card-thumb.locked { display: flex; align-items: center; justify-content: center; color: var(--ink-soft); font-size: 1.1rem; opacity: 0.5; }
+
+  /* rare cards (every 10th level) get a sweeping foil shimmer instead of sitting flat like the rest */
+  .card-rare { position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(230,180,90,0.5); }
+  .card-rare::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.6) 47%, rgba(255,220,140,0.7) 52%, transparent 70%);
+    background-size: 250% 250%; mix-blend-mode: overlay;
+    animation: shimmerSweep 2.6s ease-in-out infinite;
+  }
+  @keyframes shimmerSweep { 0% { background-position: 200% 200%; } 100% { background-position: -60% -60%; } }
+  @media (prefers-reduced-motion: reduce) { .card-rare::after { animation: none; } }
+
+  /* on an actual phone, fill the real screen instead of showing a small phone-mockup-in-a-page */
+  @media (max-width: 520px) {
+    .stage { padding: 0; gap: 0; min-height: 100dvh; }
+    .stage-title { display: none; }
+    .phone { width: 100%; max-width: 100%; border-radius: 0; padding: 0; border: none; box-shadow: none; background: var(--paper); }
+    .phone-inner { border-radius: 0; min-height: 100dvh; }
+  }
+
+  /* real web layout above phone width: no more phone-mockup chrome, canvas gets a proper
+     side panel instead of everything stacked mobile-style under it, tabs move to a top nav */
+  @media (min-width: 860px) {
+    .stage { padding: 36px 24px 56px; }
+    .stage-title { max-width: 640px; }
+    .phone { width: 100%; max-width: 1040px; border-radius: 20px; padding: 0; box-shadow: 0 30px 70px var(--shadow); }
+    .phone-inner { border-radius: 20px; display: flex; flex-direction: column; }
+    .app-header { padding: 22px 28px 10px; }
+    .view-strip, .season-strip, .material-strip { padding-left: 28px; padding-right: 28px; }
+
+    .tab-bar { order: -1; border-top: none; border-bottom: 1px solid var(--line); justify-content: flex-start; gap: 4px; padding: 0 24px; }
+    .tab-btn { flex: 0 0 auto; flex-direction: row; gap: 7px; padding: 14px 6px; border-bottom: 2px solid transparent; }
+    .tab-btn.active { border-bottom-color: var(--moss); }
+
+    .toast { left: 50%; right: auto; transform: translate(-50%,6px); width: 340px; }
+    .toast.show { transform: translate(-50%,0); }
+
+    #viewFar {
+      display: grid;
+      grid-template-columns: minmax(0, 640px) 300px;
+      grid-template-areas:
+        "canvas tools" "canvas variants" "canvas actions" "canvas status" "canvas clip" "canvas ghost";
+      gap: 6px 24px;
+      padding: 8px 28px 28px;
+      align-items: start;
+    }
+    #viewFar .canvas-wrap { grid-area: canvas; margin: 0; }
+    #viewFar .tool-dock { grid-area: tools; flex-direction: column; padding: 0; }
+    #viewFar .tool-btn { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 10px 14px; }
+    #viewFar .variant-row { grid-area: variants; padding: 4px 0 0; }
+    #viewFar .action-dock { grid-area: actions; flex-direction: column; padding: 4px 0 0; }
+    #viewFar .action-btn { justify-content: center; }
+    #viewFar .record-status { grid-area: status; padding: 0; }
+    #viewFar .clip-result { grid-area: clip; margin: 0; }
+    #viewFar .ghost-note { grid-area: ghost; padding: 0; }
+
+    #subLevelGrid .level-grid { grid-template-columns: repeat(8, 1fr); max-width: 640px; margin: 0 28px; }
+    #subCollection .card-grid { grid-template-columns: repeat(6, 1fr); max-width: 800px; margin: 0 28px; }
+    #subLevelPlay { max-width: 640px; margin: 0 auto; padding: 8px 28px 28px; }
+
+    .shop-grid { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin: 0 auto; padding: 14px 28px; }
+    .settings-list { max-width: 520px; margin: 0 auto; padding: 8px 28px 28px; }
+  }
+</style>
+
+<div class="stage">
+  <div class="stage-title">
+    <h1 id="stageTitleH1">Interactive Prototype · Garden View / Challenge Mode</h1>
+    <p id="stageTitleP">You start with flat, unraked sand. Drag to rake — hover shows a little rake cursor. The "Smooth" tool erases a local area instead of using full undo. Switch between Garden (the whole space — rocks, moss, plants, decor) and Challenges (50 original rake-pattern levels that unlock zen-garden / incense cards).</p>
+  </div>
+
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="app-header">
+        <div class="app-title">
+          <h2 id="appTitleH2">My Garden</h2>
+          <span class="season-badge" id="seasonBadge">Summer · Evergreen</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="icon-btn" id="langBtn" aria-label="Switch language" style="width:auto; padding:0 10px; font-family:'SF Mono',monospace; font-size:0.72rem;">ES</button>
+          <button class="icon-btn" id="dayNightBtn" aria-label="Toggle day/night">
+            <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2V4M12 20V22M2 12H4M20 12H22M4.9 4.9L6.3 6.3M17.7 17.7L19.1 19.1M19.1 4.9L17.7 6.3M6.3 17.7L4.9 19.1"/></svg>
+            <svg id="moonIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M20 14.5A8 8 0 1 1 9.5 4A6.5 6.5 0 0 0 20 14.5Z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="view-strip">
+        <button class="view-btn active" data-view="far">Garden</button>
+        <button class="view-btn" data-view="levels">Challenges</button>
+      </div>
+
+      <div class="season-strip" id="seasonStrip">
+        <button class="season-btn" data-season="spring">Spring</button>
+        <button class="season-btn active" data-season="summer">Summer</button>
+        <button class="season-btn" data-season="autumn">Autumn</button>
+        <button class="season-btn" data-season="winter">Winter</button>
+      </div>
+
+      <div class="material-strip" id="materialStrip">
+        <button class="material-btn active" data-material="white" style="--sw:#EDEBDE"><span class="material-dot"></span>White Sand</button>
+        <button class="material-btn" data-material="stone" style="--sw:#C9BC98"><span class="material-dot"></span>Grey Grit</button>
+        <button class="material-btn" data-material="black" style="--sw:#2A2926"><span class="material-dot"></span>Black Sand</button>
+        <button class="material-btn" data-material="clay" style="--sw:#B8703E"><span class="material-dot"></span>Terracotta</button>
+      </div>
+
+      <div class="screen garden-screen" id="screen-garden">
+
+        <div class="view" id="viewFar">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="gardenCanvas" width="640" height="860"></canvas>
+            <div class="particles" id="particles"></div>
+            <div class="stars" id="stars"></div>
+            <div class="cursor-ghost" id="cursorGhost"></div>
+          </div>
+
+          <div class="tool-dock">
+            <button class="tool-btn active" data-tool="rake" aria-label="Rake">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13 3L6 11"/><path d="M2 11H10"/><path d="M3 11V16M5.3 11V16M7.6 11V16M9.9 11V16"/></svg>
+              Rake
+            </button>
+            <button class="tool-btn" data-tool="rock" aria-label="Rock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 16C4 10 9 6 12 6C16 6 20 10 20 15C20 18 16 19 12 19C8 19 4 19 4 16Z"/></svg>
+              Rock
+            </button>
+            <button class="tool-btn" data-tool="moss" aria-label="Moss">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3C6 3 4 9 4 14C4 18 8 20 12 20C16 20 20 18 20 14C20 9 18 3 12 3Z"/><path d="M12 4V19"/></svg>
+              Moss
+            </button>
+            <button class="tool-btn" data-tool="plant" aria-label="Plant">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 20V6M8 9H6M8 13H10"/><path d="M12 20V3M12 7H10M12 11H14"/><path d="M16 20V8M16 11H14M16 15H18"/></svg>
+              Plant
+            </button>
+            <button class="tool-btn" data-tool="ornament" aria-label="Decor">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6H21M4 9H20M7 6V20M17 6V20"/></svg>
+              Décor
+            </button>
+            <button class="tool-btn" data-tool="smooth" aria-label="Smooth">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16H15L18 12H6Z"/><path d="M11 12V5"/><path d="M8 5H14"/></svg>
+              Smooth
+            </button>
+          </div>
+
+          <div class="variant-row" id="variantRow"></div>
+
+          <div class="action-dock">
+            <button class="action-btn" id="undoBtn" aria-label="Undo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9H10M4 9V3M4 9C6.5 5 10 3 13.5 3C18.5 3 22 7.5 22 12.5C22 17.5 18 21.5 13 21.5C9.5 21.5 6.5 20 4.5 17"/></svg>
+              Undo
+            </button>
+            <button class="action-btn" id="clearBtn" aria-label="Clear">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 7H19M9 7V4H15V7M7 7L8 21H16L17 7"/></svg>
+              Clear
+            </button>
+            <button class="action-btn record-btn" id="recordBtn" aria-label="Record clip">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg>
+              Record
+            </button>
+          </div>
+          <div class="record-status hidden" id="recordStatus"><span class="rec-dot"></span>Recording… keep raking for a better clip</div>
+
+          <div class="clip-result hidden" id="clipResult">
+            <video id="clipVideo" muted loop playsinline controls></video>
+            <div class="clip-actions">
+              <a class="reset-btn" id="clipDownload" download="zen-garden-clip.webm">Download clip</a>
+              <button class="reset-btn" id="clipCloseBtn">Close</button>
+            </div>
+          </div>
+
+          <p class="ghost-note" id="farGhostNote">This clip only exists in your browser until you tap Download.</p>
+        </div>
+
+        <div class="view hidden" id="viewLevels">
+
+          <div class="levels-sub" id="subLevelGrid">
+            <div class="levels-header">
+              <h3 id="levelsGridTitle">Rake Pattern Challenges · 50 Scenes</h3>
+              <button class="link-btn" id="openCollectionBtn">Cards</button>
+            </div>
+            <div class="level-grid" id="levelGrid"></div>
+          </div>
+
+          <div class="levels-sub hidden" id="subLevelPlay">
+            <div class="level-play-head">
+              <button class="link-btn" id="backToGridBtn">← Levels</button>
+              <h3 id="levelPlayTitle">Level 1</h3>
+              <button class="link-btn" id="retryLevelBtn">Retry</button>
+            </div>
+            <div class="canvas-wrap" id="levelWrap">
+              <canvas id="levelCanvas" width="640" height="640"></canvas>
+              <div class="cursor-ghost" id="cursorGhostLevel"></div>
+              <div class="win-overlay hidden" id="winOverlay">
+                <h3 id="winTitle">Complete</h3>
+                <div class="win-card"><canvas id="winCardCanvas" width="240" height="336"></canvas></div>
+                <div class="win-actions">
+                  <button id="winBackBtn">Back to levels</button>
+                  <button class="primary" id="winNextBtn">Next level</button>
+                </div>
+              </div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="progress-label" id="progressLabel">0%</div>
+            </div>
+            <p class="ghost-note" id="levelGhostNote">Rake along the dashed guide — cover enough of it to clear the level. No timer, no penalty.</p>
+          </div>
+
+          <div class="levels-sub hidden" id="subCollection">
+            <div class="levels-header">
+              <h3 id="collectionTitle">Card Collection</h3>
+              <button class="link-btn" id="closeCollectionBtn">← Levels</button>
+            </div>
+            <div class="card-grid" id="cardGrid"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="screen shop-screen hidden" id="screen-shop">
+        <div class="shop-plus-banner" id="shopBanner"><strong>Plus Membership</strong>No ads · All content · Cloud sync · From $3.99/mo</div>
+        <div class="shop-grid" id="shopGrid"></div>
+      </div>
+
+      <div class="screen settings-screen hidden" id="screen-settings">
+        <div class="settings-list">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label" id="soundLabel">Ambient Sound</div>
+              <div class="settings-row-sub" id="soundSub">Synthesized wind & water noise — no external audio files</div>
+            </div>
+            <button class="switch" id="soundSwitch" aria-label="Toggle ambient sound"></button>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label" id="volumeLabel">Volume</div>
+            <input type="range" id="volumeSlider" min="0" max="35" value="18">
+          </div>
+          <hr class="settings-divider">
+          <div class="settings-row">
+            <div class="settings-row-label" id="nightLabel">Day / Night</div>
+            <button class="switch" id="nightSwitch" aria-label="Toggle day/night"></button>
+          </div>
+          <hr class="settings-divider">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label" id="resetLabel">Reset Garden</div>
+              <div class="settings-row-sub" id="resetSub">Clears the canvas back to flat, unraked sand</div>
+            </div>
+            <button class="reset-btn" id="resetGardenBtn">Reset</button>
+          </div>
+          <hr class="settings-divider">
+          <p class="about-note" id="aboutNote">This prototype is for validating the look and feel — it isn't wired to real payments, accounts, or cloud sync yet; that comes with the production app.</p>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" data-screen="garden" aria-label="Garden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3C6 3 4 9 4 14C4 18 8 20 12 20C16 20 20 18 20 14C20 9 18 3 12 3Z"/></svg>
+          Garden
+        </button>
+        <button class="tab-btn" data-screen="shop" aria-label="Shop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M6 8H18L17 21H7L6 8Z"/><path d="M9 8V6C9 4 10 3 12 3C14 3 15 4 15 6V8"/></svg>
+          Shop
+        </button>
+        <button class="tab-btn" data-screen="settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2V5M12 19V22M2 12H5M19 12H22M4.9 4.9L7 7M17 17L19.1 19.1M19.1 4.9L17 7M7 17L4.9 19.1"/></svg>
+          Settings
+        </button>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ===================== shared materials & helpers =====================
+  var SAND_MATERIALS = {
+    white: { top:'#F1EFE6', bottom:'#DEDACB', trench:'#C7C2AE', shadow:'rgba(100,98,84,0.45)', highlight:'rgba(255,255,252,0.92)', grain:'rgba(110,108,92,0.045)' },
+    stone: { top:'#DCD2B8', bottom:'#C9BC98', trench:'#A99A76', shadow:'rgba(88,74,50,0.5)',   highlight:'rgba(255,250,235,0.65)', grain:'rgba(90,78,54,0.06)' },
+    black: { top:'#3C3B37', bottom:'#232220', trench:'#161513', shadow:'rgba(0,0,0,0.55)',     highlight:'rgba(190,186,176,0.5)', grain:'rgba(0,0,0,0.14)' },
+    clay:  { top:'#CC7E4F', bottom:'#A85C36', trench:'#874827', shadow:'rgba(55,25,10,0.55)',  highlight:'rgba(255,224,192,0.7)', grain:'rgba(70,32,12,0.07)' }
+  };
+  var sandMaterial = 'white';
+
+  // ---- language: EN default, ES second (US market) — shared across both scenes ----
+  var LANG = 'en';
+  try { LANG = localStorage.getItem('zenLang') || 'en'; } catch(e){}
+  var STR = {
+    stageTitleH1: { en:'Interactive Prototype · Garden View / Challenge Mode', es:'Prototipo Interactivo · Vista del Jardín / Modo Desafío' },
+    stageTitleP: {
+      en: 'You start with flat, unraked sand. Drag to rake — hover shows a little rake cursor. The "Smooth" tool erases a local area instead of using full undo. Switch between Garden (the whole space — rocks, moss, plants, decor) and Challenges (50 original rake-pattern levels that unlock zen-garden / incense cards).',
+      es: 'Empiezas con arena plana sin rastrillar. Arrastra para rastrillar — el cursor se convierte en un rastrillo. La herramienta "Alisar" borra un área local en vez de deshacer todo. Cambia entre Jardín (todo el espacio: rocas, musgo, plantas, decoración) y Desafíos (50 niveles originales de patrones que desbloquean cartas de jardín zen / incienso).'
+    },
+    appTitleH2: { en:'My Garden', es:'Mi Jardín' },
+    viewFar: { en:'Garden', es:'Jardín' },
+    viewLevels: { en:'Challenges', es:'Desafíos' },
+    seasonSpring: { en:'Spring', es:'Primavera' }, seasonSummer: { en:'Summer', es:'Verano' },
+    seasonAutumn: { en:'Autumn', es:'Otoño' }, seasonWinter: { en:'Winter', es:'Invierno' },
+    materialWhite: { en:'White Sand', es:'Arena Blanca' }, materialStone: { en:'Grey Grit', es:'Grava Gris' },
+    materialBlack: { en:'Black Sand', es:'Arena Negra' }, materialClay: { en:'Terracotta', es:'Terracota' },
+    toolRake: { en:'Rake', es:'Rastrillo' }, toolRock: { en:'Rock', es:'Roca' }, toolMoss: { en:'Moss', es:'Musgo' },
+    toolPlant: { en:'Plant', es:'Planta' }, toolOrnament: { en:'Décor', es:'Decoración' }, toolSmooth: { en:'Smooth', es:'Alisar' },
+    actionUndo: { en:'Undo', es:'Deshacer' }, actionClear: { en:'Clear', es:'Limpiar' }, actionRecord: { en:'Record', es:'Grabar' },
+    recordStatus: { en:'Recording… keep raking for a better clip', es:'Grabando… sigue rastrillando para un mejor clip' },
+    clipDownload: { en:'Download clip', es:'Descargar clip' }, clipCloseBtn: { en:'Close', es:'Cerrar' },
+    farGhostNote: { en:'This clip only exists in your browser until you tap Download.', es:'Este clip solo existe en tu navegador hasta que toques Descargar.' },
+    levelsGridTitle: { en:'Rake Pattern Challenges · 50 Scenes', es:'Desafíos de Patrones · 50 Escenas' },
+    openCollectionBtn: { en:'Cards', es:'Cartas' },
+    backToGridBtn: { en:'← Levels', es:'← Niveles' },
+    retryLevelBtn: { en:'Retry', es:'Reintentar' },
+    winBackBtn: { en:'Back to levels', es:'Volver a niveles' },
+    winNextBtn: { en:'Next level', es:'Siguiente nivel' },
+    levelGhostNote: { en:'Rake along the dashed guide — cover enough of it to clear the level. No timer, no penalty.', es:'Rastrilla siguiendo la guía punteada — cubre lo suficiente para superar el nivel. Sin cronómetro, sin penalización.' },
+    collectionTitle: { en:'Card Collection', es:'Colección de Cartas' },
+    closeCollectionBtn: { en:'← Levels', es:'← Niveles' },
+    tabGarden: { en:'Garden', es:'Jardín' }, tabShop: { en:'Shop', es:'Tienda' }, tabSettings: { en:'Settings', es:'Ajustes' },
+    soundLabel: { en:'Ambient Sound', es:'Sonido Ambiental' },
+    soundSub: { en:'Synthesized wind & water noise — no external audio files', es:'Ruido blanco sintetizado de viento y agua — sin archivos de audio externos' },
+    volumeLabel: { en:'Volume', es:'Volumen' },
+    nightLabel: { en:'Day / Night', es:'Día / Noche' },
+    resetLabel: { en:'Reset Garden', es:'Reiniciar Jardín' },
+    resetSub: { en:'Clears the canvas back to flat, unraked sand', es:'Limpia el lienzo y vuelve a la arena plana sin rastrillar' },
+    resetGardenBtn: { en:'Reset', es:'Reiniciar' },
+    aboutNote: { en:"This prototype is for validating the look and feel — it isn't wired to real payments, accounts, or cloud sync yet; that comes with the production app.", es:'Este es un prototipo para validar la dirección visual y la sensación general — aún no está conectado a pagos reales, cuentas o sincronización en la nube; eso llegará con la app de producción.' },
+    shopBanner: { en:'<strong>Plus Membership</strong>No ads · All content · Cloud sync · From $3.99/mo', es:'<strong>Membresía Plus</strong>Sin anuncios · Todo el contenido · Sincronización en la nube · Desde $3.99/mes' },
+    shopUnlock: { en:'Unlock', es:'Desbloquear' }, shopUse: { en:'Use', es:'Usar' },
+    resetToast: { en:'Reset to flat, unraked sand', es:'Reiniciado a arena plana sin rastrillar' },
+    recordUnsupported: { en:"This browser can't record locally — the real app will use a native solution", es:'Este navegador no puede grabar localmente — la app real usará una solución nativa' }
+  };
+  function t(key){ var e = STR[key]; return e ? (e[LANG] || e.en) : key; }
+  function setBtnText(el, text){
+    if (!el) return;
+    for (var i = el.childNodes.length-1; i >= 0; i--){
+      if (el.childNodes[i].nodeType === 3){ el.childNodes[i].nodeValue = text; return; }
+    }
+    el.appendChild(document.createTextNode(text));
+  }
+
+  function shadeColor(hex, amt){
+    var num = parseInt(hex.replace('#',''), 16);
+    var r = Math.min(255, Math.max(0, (num>>16) + amt));
+    var g = Math.min(255, Math.max(0, ((num>>8)&0xFF) + amt));
+    var b = Math.min(255, Math.max(0, (num&0xFF) + amt));
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  var RAKE_STYLES = {
+    fine:   { tineCount:6, spacing:8,  trenchWidth:6 },
+    coarse: { tineCount:4, spacing:15, trenchWidth:11 },
+    blade:  { tineCount:1, spacing:0,  trenchWidth:34 },
+    comb:   { tineCount:5, spacing:11, trenchWidth:15 }
+  };
+
+  function buildOffsetPath(pts, amount){
+    var out = [];
+    for (var i = 0; i < pts.length; i++){
+      var prev = pts[Math.max(0, i-1)];
+      var next = pts[Math.min(pts.length-1, i+1)];
+      var dx = next.x - prev.x, dy = next.y - prev.y;
+      var len = Math.hypot(dx,dy) || 1;
+      var nx = -dy/len, ny = dx/len;
+      out.push({ x: pts[i].x + nx*amount, y: pts[i].y + ny*amount });
+    }
+    return out;
+  }
+  function strokePathOn(ctx, ptsArr, width, color){
+    if (width <= 0) return;
+    ctx.beginPath();
+    for (var i = 0; i < ptsArr.length; i++){
+      if (i === 0) ctx.moveTo(ptsArr[i].x, ptsArr[i].y); else ctx.lineTo(ptsArr[i].x, ptsArr[i].y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+  function drawGrooveOn(ctx, pts, styleId, material){
+    if (pts.length < 2) return;
+    var mat = SAND_MATERIALS[material];
+    var st = RAKE_STYLES[styleId] || RAKE_STYLES.fine;
+    var edgeOffset = st.trenchWidth * 0.42;
+    var half = (st.tineCount-1)/2;
+    for (var k = -half; k <= half; k++){
+      var center = st.spacing * k;
+      strokePathOn(ctx, buildOffsetPath(pts, center), st.trenchWidth, mat.trench);
+      strokePathOn(ctx, buildOffsetPath(pts, center + edgeOffset), st.trenchWidth*0.38, mat.shadow);
+      strokePathOn(ctx, buildOffsetPath(pts, center - edgeOffset), st.trenchWidth*0.3, mat.highlight);
+    }
+  }
+
+  function smoothBlobPathOn(ctx, radii, aspect){
+    var n = radii.length;
+    var pts = radii.map(function(r, i){
+      var a = (i/n) * Math.PI * 2;
+      return { x: Math.cos(a)*r, y: Math.sin(a)*r*aspect };
+    });
+    ctx.beginPath();
+    for (var i = 0; i < n; i++){
+      var cur = pts[i], next = pts[(i+1)%n];
+      var mid = { x:(cur.x+next.x)/2, y:(cur.y+next.y)/2 };
+      if (i === 0){
+        var prevMid = { x:(pts[n-1].x+cur.x)/2, y:(pts[n-1].y+cur.y)/2 };
+        ctx.moveTo(prevMid.x, prevMid.y);
+      }
+      ctx.quadraticCurveTo(cur.x, cur.y, mid.x, mid.y);
+    }
+    ctx.closePath();
+  }
+
+  function decorFootprint(a){
+    if (a.type === 'rock') return ROCK_VARIANTS[a.variant].base * a.scale;
+    if (a.type === 'moss') return 30 * a.scale;
+    return 45 * a.scale;
+  }
+
+  // one shared cached grain-dot tile per material, used for the far view's fine sand grain
+  var grainTileCache = {};
+  function getGrainTile(material){
+    if (grainTileCache[material]) return grainTileCache[material];
+    var tile = document.createElement('canvas');
+    tile.width = 96; tile.height = 96;
+    var tctx = tile.getContext('2d');
+    var mat = SAND_MATERIALS[material];
+    for (var i = 0; i < 460; i++){
+      var x = Math.random()*96, y = Math.random()*96, s = Math.random()*1.5 + 0.3;
+      tctx.fillStyle = mat.grain;
+      tctx.fillRect(x, y, s, s);
+    }
+    grainTileCache[material] = tile;
+    return tile;
+  }
+
+  // one shared cached mottled-stone texture used by every rock (overlay-blended)
+  var rockTexture = null;
+  function getRockTexture(){
+    if (rockTexture) return rockTexture;
+    var t = document.createElement('canvas'); t.width = 120; t.height = 120;
+    var tc = t.getContext('2d');
+    tc.fillStyle = '#808080'; tc.fillRect(0,0,120,120);
+    for (var i = 0; i < 260; i++){
+      var x = Math.random()*120, y = Math.random()*120, r = 1 + Math.random()*3.2;
+      var v = Math.random() < 0.5 ? (40+Math.random()*50) : (215-Math.random()*50);
+      tc.beginPath();
+      tc.ellipse(x, y, r, r*0.8, Math.random()*Math.PI, 0, Math.PI*2);
+      tc.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+      tc.globalAlpha = 0.5 + Math.random()*0.3;
+      tc.fill();
+    }
+    tc.globalAlpha = 1;
+    rockTexture = t;
+    return t;
+  }
+
+  var ROCK_VARIANTS = {
+    round:  { base:34, aspect:0.86, count:16, jitter:0.09, hi:'#8B8B7E', mid:'#5E5E52', low:'#3A3A32' },
+    craggy: { base:32, aspect:0.9,  count:13, jitter:0.32, hi:'#82786C', mid:'#54493D', low:'#2E2620' },
+    flat:   { base:38, aspect:0.42, count:16, jitter:0.12, hi:'#9C9787', mid:'#79715D', low:'#4E4838' }
+  };
+  var MOSS_VARIANTS = { patch: { count:1 }, mound: { count:3 } };
+  var MOSS_TUFT_PALETTE = ['#7C9152','#8FA35E','#647A44','#597038','#A7B876'];
+
+  function makeDecor(x, y, type, variant, scaleOverride){
+    var d = {
+      kind: 'decor', type: type, variant: variant, x: x, y: y,
+      rotation: (Math.random()-0.5)*0.5,
+      scale: (typeof scaleOverride === 'number') ? scaleOverride : (0.85 + Math.random()*0.3)
+    };
+    if (type === 'rock'){
+      var rcfg = ROCK_VARIANTS[variant];
+      d.radii = [];
+      for (var i = 0; i < rcfg.count; i++) d.radii.push(rcfg.base * (1 + (Math.random()-0.5)*2*rcfg.jitter));
+      var centers = [ {x:rcfg.base*0.12, y:-rcfg.base*0.32}, {x:-rcfg.base*0.25, y:rcfg.base*0.05} ];
+      d.lichen = centers.map(function(c){
+        var dots = [];
+        for (var k = 0; k < 6; k++) dots.push({ x:c.x+(Math.random()-0.5)*10, y:c.y+(Math.random()-0.5)*7, r:1.3+Math.random()*1.2, a:0.28+Math.random()*0.25 });
+        return dots;
+      });
+    } else if (type === 'moss'){
+      var mcfg = MOSS_VARIANTS[variant];
+      d.blobs = [];
+      for (var b = 0; b < mcfg.count; b++){
+        var base = 20 + Math.random()*9;
+        var radii = [];
+        for (var j = 0; j < 10; j++) radii.push(base * (1 + (Math.random()-0.5)*0.5));
+        var tufts = [];
+        for (var tI = 0; tI < 90; tI++){
+          var ang = Math.random()*Math.PI*2, rad = Math.random()*base*1.05;
+          tufts.push({
+            x: Math.cos(ang)*rad, y: Math.sin(ang)*rad*0.8,
+            tlen: 2+Math.random()*3.5, tang: Math.random()*Math.PI*2,
+            color: MOSS_TUFT_PALETTE[(Math.random()*MOSS_TUFT_PALETTE.length)|0],
+            alpha: 0.55+Math.random()*0.35, width: 1.1+Math.random()*0.8
+          });
+        }
+        var specks = [];
+        for (var sI = 0; sI < 14; sI++){
+          var a2 = Math.random()*Math.PI*2, r2 = Math.random()*base*0.9;
+          specks.push({ x: Math.cos(a2)*r2, y: Math.sin(a2)*r2*0.8 });
+        }
+        d.blobs.push({
+          ox: mcfg.count > 1 ? (Math.random()-0.5)*22 : 0,
+          oy: mcfg.count > 1 ? (Math.random()-0.5)*14 : 0,
+          base: base, radii: radii, tufts: tufts, specks: specks
+        });
+      }
+    }
+    return d;
+  }
+
+  // ===================== FAR scene =====================
+  (function(){
+    var canvas = document.getElementById('gardenCanvas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+
+    var tool = 'rake';
+    var variantByTool = { rake: 'fine', rock: 'round', moss: 'patch', plant: 'bamboo', ornament: 'toro' };
+    var variantOptions = {
+      rake: [ {id:'fine', en:'Fine', es:'Fino'}, {id:'coarse', en:'Coarse', es:'Grueso'} ],
+      rock: [ {id:'round', en:'Round', es:'Redonda'}, {id:'craggy', en:'Craggy', es:'Escarpada'}, {id:'flat', en:'Flat', es:'Plana'} ],
+      moss: [ {id:'patch', en:'Patch', es:'Parche'}, {id:'mound', en:'Mound', es:'Montículo'} ],
+      plant: [ {id:'bamboo', en:'Bamboo', es:'Bambú'}, {id:'maple', en:'Maple', es:'Arce'}, {id:'pine', en:'Pine', es:'Pino'} ],
+      ornament: [ {id:'toro', en:'Lantern', es:'Farol'}, {id:'torii', en:'Torii', es:'Torii'}, {id:'bridge', en:'Bridge', es:'Puente'} ],
+      smooth: []
+    };
+
+    var actions = [];
+    var currentRake = null;
+    var smoothing = false;
+    var groupCounter = 0;
+    var SMOOTH_RADIUS = 46;
+
+    function drawBase(){
+      var mat = SAND_MATERIALS[sandMaterial];
+      var g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0, mat.top);
+      g.addColorStop(1, mat.bottom);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = ctx.createPattern(getGrainTile(sandMaterial), 'repeat');
+      ctx.fillRect(0,0,W,H);
+    }
+
+    function drawRock(d){
+      var cfg = ROCK_VARIANTS[d.variant];
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rotation);
+      ctx.scale(d.scale, d.scale);
+
+      ctx.save();
+      ctx.filter = 'blur(4px)';
+      ctx.beginPath();
+      ctx.ellipse(2, cfg.base*cfg.aspect*0.95, cfg.base*1.08, cfg.base*cfg.aspect*0.3, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(35,32,24,0.3)';
+      ctx.fill();
+      ctx.restore();
+
+      smoothBlobPathOn(ctx, d.radii, cfg.aspect);
+      ctx.save();
+      ctx.clip();
+      var grad = ctx.createRadialGradient(-cfg.base*0.32, -cfg.base*0.38, cfg.base*0.12, 0, 0, cfg.base*1.15);
+      grad.addColorStop(0, cfg.hi);
+      grad.addColorStop(0.55, cfg.mid);
+      grad.addColorStop(1, cfg.low);
+      ctx.fillStyle = grad;
+      ctx.fillRect(-cfg.base*1.3, -cfg.base*1.3, cfg.base*2.6, cfg.base*2.6);
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(getRockTexture(), -cfg.base*1.3, -cfg.base*1.3, cfg.base*2.6, cfg.base*2.6);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = 'rgba(20,16,10,0.35)';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.moveTo(-cfg.base*0.1,-cfg.base*0.5); ctx.quadraticCurveTo(cfg.base*0.05,-cfg.base*0.1,-cfg.base*0.15,cfg.base*0.35); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cfg.base*0.3,-cfg.base*0.3); ctx.quadraticCurveTo(cfg.base*0.15,cfg.base*0.05,cfg.base*0.35,cfg.base*0.4); ctx.stroke();
+      d.lichen.forEach(function(dots){
+        dots.forEach(function(dot){
+          ctx.beginPath(); ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(100,116,70,' + dot.a + ')';
+          ctx.fill();
+        });
+      });
+      ctx.restore();
+
+      smoothBlobPathOn(ctx, d.radii, cfg.aspect);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMoss(d){
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.scale(d.scale, d.scale);
+      d.blobs.forEach(function(b){
+        ctx.save();
+        ctx.translate(b.ox, b.oy);
+        smoothBlobPathOn(ctx, b.radii, 0.78);
+        ctx.save();
+        ctx.clip();
+        var g = ctx.createRadialGradient(-6,-8,4,0,0,b.base*1.15);
+        g.addColorStop(0, '#5C6E3E'); g.addColorStop(1, '#31401F');
+        ctx.fillStyle = g;
+        ctx.fillRect(-b.base*1.2, -b.base*1.2, b.base*2.4, b.base*2.4);
+        b.tufts.forEach(function(t){
+          ctx.beginPath();
+          ctx.moveTo(t.x, t.y);
+          ctx.lineTo(t.x + Math.cos(t.tang)*t.tlen, t.y + Math.sin(t.tang)*t.tlen - t.tlen*0.6);
+          ctx.strokeStyle = t.color;
+          ctx.globalAlpha = t.alpha;
+          ctx.lineWidth = t.width;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+        b.specks.forEach(function(sp){
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 1, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(20,26,12,0.35)';
+          ctx.fill();
+        });
+        ctx.restore();
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+
+    function drawBamboo(){
+      var stalks = [ {dx:-16, h:92, curve:8, w:3.4}, {dx:0, h:122, curve:-6, w:4}, {dx:14, h:76, curve:10, w:3} ];
+      stalks.forEach(function(s){
+        var bx = s.dx, hw = s.w;
+        ctx.beginPath();
+        ctx.moveTo(bx-hw, 4);
+        ctx.quadraticCurveTo(bx+s.curve*0.5-hw*0.3, -s.h*0.5, bx+s.curve-hw*0.5, -s.h);
+        ctx.lineTo(bx+s.curve+hw*0.5, -s.h);
+        ctx.quadraticCurveTo(bx+s.curve*0.5+hw*0.3, -s.h*0.5, bx+hw, 4);
+        ctx.closePath();
+        var g = ctx.createLinearGradient(bx-hw, 0, bx+hw, 0);
+        g.addColorStop(0, '#324B29'); g.addColorStop(0.42, '#7CA05F'); g.addColorStop(0.55, '#8FB56E'); g.addColorStop(1, '#3E5A34');
+        ctx.fillStyle = g;
+        ctx.fill();
+        for (var n = 22; n < s.h; n += 24){
+          var t = n/s.h;
+          var nx = bx + s.curve*t, ny = -n;
+          ctx.beginPath(); ctx.moveTo(nx-hw-0.5, ny); ctx.lineTo(nx+hw+0.5, ny);
+          ctx.strokeStyle = 'rgba(28,42,20,0.55)'; ctx.lineWidth = 1.4; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(nx-hw, ny+2.2); ctx.lineTo(nx+hw, ny+2.2);
+          ctx.strokeStyle = 'rgba(210,230,180,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+        }
+        for (var l = 0; l < 5; l++){
+          var lx = bx + s.curve, ly = -s.h + 6;
+          var ang = -0.3 + l*0.32;
+          var len = 26 + (l%3)*8;
+          ctx.save();
+          ctx.translate(lx, ly);
+          ctx.rotate(ang);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(len*0.32, -len*0.28, len*0.06, -len);
+          ctx.quadraticCurveTo(-len*0.18, -len*0.34, 0, 0);
+          ctx.closePath();
+          var lg = ctx.createLinearGradient(0,0,0,-len);
+          lg.addColorStop(0, '#4B6B3C'); lg.addColorStop(1, '#8FB56E');
+          ctx.fillStyle = lg;
+          ctx.globalAlpha = 0.92;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+
+    function drawMaple(){
+      ctx.beginPath();
+      ctx.moveTo(-4, 4);
+      ctx.quadraticCurveTo(-14, -30, -4, -52);
+      ctx.quadraticCurveTo(2, -64, -8, -78);
+      ctx.lineTo(-2, -80);
+      ctx.quadraticCurveTo(10, -66, 4, -52);
+      ctx.quadraticCurveTo(14, -30, 4, 4);
+      ctx.closePath();
+      var tg = ctx.createLinearGradient(-14, 0, 10, -80);
+      tg.addColorStop(0, '#4A3324'); tg.addColorStop(0.5, '#7A5A3E'); tg.addColorStop(1, '#5B4130');
+      ctx.fillStyle = tg;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(30,20,12,0.3)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-6,-8); ctx.quadraticCurveTo(-10,-34,-3,-56); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(6,-14); ctx.quadraticCurveTo(9,-40,2,-64); ctx.stroke();
+
+      var canopyPts = [
+        {x:-18,y:-66},{x:-6,y:-80},{x:8,y:-88},{x:20,y:-78},{x:24,y:-62},
+        {x:14,y:-52},{x:-2,y:-56},{x:-14,y:-54},{x:2,y:-72},{x:-10,y:-74},
+        {x:12,y:-68},{x:18,y:-90}
+      ];
+      var palette = ['#B23F26','#C2532F','#D9702E','#E38F3E','#A83A22'];
+      canopyPts.forEach(function(pt, i){
+        var r = 9 + (i%4)*2.4;
+        ctx.save();
+        ctx.filter = 'blur(1.4px)';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+        var cg = ctx.createRadialGradient(pt.x-r*0.35, pt.y-r*0.4, r*0.15, pt.x, pt.y, r);
+        cg.addColorStop(0, palette[i % palette.length]);
+        cg.addColorStop(1, '#7A2E1A');
+        ctx.fillStyle = cg;
+        ctx.globalAlpha = 0.9;
+        ctx.fill();
+        ctx.restore();
+      });
+      ctx.globalAlpha = 0.5;
+      [{x:8,y:-88},{x:-6,y:-80},{x:18,y:-90}].forEach(function(pt){
+        ctx.beginPath(); ctx.arc(pt.x-3, pt.y-3, 3, 0, Math.PI*2);
+        ctx.fillStyle = '#F2A85A'; ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPine(rnd){
+      ctx.beginPath();
+      ctx.moveTo(-3, 4);
+      ctx.quadraticCurveTo(-10, -40, 2, -60);
+      ctx.quadraticCurveTo(8, -72, 4, -92);
+      ctx.lineTo(9, -92);
+      ctx.quadraticCurveTo(14, -70, 7, -58);
+      ctx.quadraticCurveTo(-2, -38, 3, 4);
+      ctx.closePath();
+      var tg = ctx.createLinearGradient(-10, 0, 14, -92);
+      tg.addColorStop(0, '#332619'); tg.addColorStop(0.5, '#6B5640'); tg.addColorStop(1, '#4A3B2C');
+      ctx.fillStyle = tg;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(20,14,8,0.35)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-4,-10); ctx.quadraticCurveTo(-9,-45,1,-70); ctx.stroke();
+
+      var pads = [ {x:-8,y:-30,w:36,h:13}, {x:11,y:-53,w:31,h:12}, {x:-5,y:-75,w:25,h:11}, {x:9,y:-93,w:19,h:9} ];
+      pads.forEach(function(p, pi){
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        var radii = [];
+        for (var i = 0; i < 14; i++){
+          var t = i/14;
+          var wobble = 1 + Math.sin(t*Math.PI*2*3 + pi)*0.12;
+          radii.push((i%2===0 ? p.w : p.h) * wobble * 0.7);
+        }
+        smoothBlobPathOn(ctx, radii, 1);
+        var pg = ctx.createLinearGradient(-p.w,-p.h,p.w,p.h);
+        pg.addColorStop(0, '#5C7C50'); pg.addColorStop(1, '#243620');
+        ctx.fillStyle = pg;
+        ctx.fill();
+        for (var s = 0; s < 16; s++){
+          var ang = rnd()*Math.PI*2, rad = rnd()*p.w*0.7;
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang)*rad, Math.sin(ang)*rad*(p.h/p.w), 1, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(20,30,14,0.3)';
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawToro(){
+      var stoneGrad = ctx.createLinearGradient(-16, -80, 16, 4);
+      stoneGrad.addColorStop(0, '#9A9A8E'); stoneGrad.addColorStop(0.5, '#6E6E62'); stoneGrad.addColorStop(1, '#484840');
+      ctx.beginPath(); ctx.moveTo(-15,4); ctx.lineTo(15,4); ctx.lineTo(11,-9); ctx.lineTo(-11,-9); ctx.closePath();
+      ctx.fillStyle = stoneGrad; ctx.fill();
+      ctx.beginPath(); ctx.rect(-6,-35,12,26); ctx.fillStyle = stoneGrad; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0,-35,16,4.5,0,0,Math.PI*2); ctx.fillStyle = '#5A5A50'; ctx.fill();
+      ctx.beginPath(); ctx.rect(-15,-59,30,24); ctx.fillStyle = stoneGrad; ctx.fill();
+      ctx.beginPath(); ctx.arc(0,-51,6,Math.PI,0,false); ctx.lineTo(6,-41); ctx.lineTo(-6,-41); ctx.closePath();
+      ctx.fillStyle = 'rgba(20,20,16,0.65)'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-21,-59); ctx.lineTo(-17,-71); ctx.quadraticCurveTo(0,-78,17,-71); ctx.lineTo(21,-59); ctx.closePath();
+      ctx.fillStyle = stoneGrad; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0,-81,4.5,6,0,0,Math.PI*2); ctx.fillStyle = '#5A5A50'; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-9,-64,6,3.2,0.3,0,Math.PI*2); ctx.fillStyle = 'rgba(94,112,70,0.55)'; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(9,-4,7,3,0,0,Math.PI*2); ctx.fillStyle = 'rgba(94,112,70,0.4)'; ctx.fill();
+    }
+
+    function drawTorii(){
+      var postH = 94, postW = 8, half = 32;
+      var vermGrad = ctx.createLinearGradient(-half-14, -postH-16, half+14, 4);
+      vermGrad.addColorStop(0, '#C1442E'); vermGrad.addColorStop(1, '#8A2E1E');
+      function post(cx, lean){
+        ctx.beginPath();
+        ctx.moveTo(cx-postW/2, 4); ctx.lineTo(cx+postW/2, 4);
+        ctx.lineTo(cx+postW/2+lean, -postH); ctx.lineTo(cx-postW/2+lean, -postH);
+        ctx.closePath();
+        ctx.fillStyle = vermGrad; ctx.fill();
+      }
+      post(-half, 5); post(half, -5);
+      ctx.beginPath(); ctx.rect(-half-postW/2-6, -postH+22, (half+postW/2+6)*2, 9);
+      ctx.fillStyle = vermGrad; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-half-26, -postH+6); ctx.lineTo(-half-26, -postH-6);
+      ctx.quadraticCurveTo(-half-30, -postH-16, -half-18, -postH-16);
+      ctx.lineTo(half+18, -postH-16);
+      ctx.quadraticCurveTo(half+30, -postH-16, half+26, -postH-6);
+      ctx.lineTo(half+26, -postH+6);
+      ctx.closePath();
+      ctx.fillStyle = vermGrad; ctx.fill();
+      ctx.beginPath(); ctx.rect(-half-24, -postH-14, (half+24)*2, 5);
+      ctx.fillStyle = '#241F1A'; ctx.fill();
+    }
+
+    function drawBridge(){
+      var span = 92, rise = 26;
+      ctx.beginPath();
+      ctx.moveTo(-span/2, 10);
+      ctx.quadraticCurveTo(0, -rise, span/2, 10);
+      ctx.lineTo(span/2, 18);
+      ctx.quadraticCurveTo(0, -rise+10, -span/2, 18);
+      ctx.closePath();
+      var wg = ctx.createLinearGradient(-span/2, 0, span/2, 0);
+      wg.addColorStop(0, '#7A5233'); wg.addColorStop(0.5, '#9C6B42'); wg.addColorStop(1, '#7A5233');
+      ctx.fillStyle = wg; ctx.fill();
+      var railPts = [];
+      for (var p = 0; p < 5; p++){
+        var t = p/4;
+        var x = -span/2 + t*span;
+        var yDeck = 10 - Math.sin(t*Math.PI)*rise;
+        var yTop = yDeck - 22;
+        ctx.beginPath(); ctx.moveTo(x, yDeck-2); ctx.lineTo(x, yTop);
+        ctx.strokeStyle = '#6B4527'; ctx.lineWidth = 2.4; ctx.stroke();
+        railPts.push({ x:x, y:yTop });
+      }
+      ctx.beginPath();
+      railPts.forEach(function(pt, i){ if (i===0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
+      ctx.strokeStyle = '#6B4527'; ctx.lineWidth = 3; ctx.stroke();
+    }
+
+    function drawOrnament(d){
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.scale(d.scale, d.scale);
+      ctx.rotate(d.rotation * 0.2);
+      if (d.variant === 'toro') drawToro();
+      else if (d.variant === 'torii') drawTorii();
+      else drawBridge();
+      ctx.restore();
+    }
+
+    function seededRandom(seed){
+      var s = seed % 2147483647; if (s <= 0) s += 2147483646;
+      return function(){ s = s*16807 % 2147483647; return (s-1)/2147483646; };
+    }
+
+    function drawPlant(d){
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.scale(d.scale, d.scale);
+      ctx.rotate(d.rotation * 0.3);
+      if (d.variant === 'bamboo') drawBamboo();
+      else if (d.variant === 'maple') drawMaple();
+      else drawPine(seededRandom(Math.floor(Math.abs(d.x)*1000 + Math.abs(d.y)*37 + 1)));
+      ctx.restore();
+    }
+
+    function render(){
+      drawBase();
+      for (var i = 0; i < actions.length; i++){
+        if (actions[i].kind === 'rake') drawGrooveOn(ctx, actions[i].pts, actions[i].variant, sandMaterial);
+      }
+      if (currentRake && currentRake.length > 1) drawGrooveOn(ctx, currentRake, variantByTool.rake, sandMaterial);
+      for (var j = 0; j < actions.length; j++){
+        var a = actions[j];
+        if (a.kind !== 'decor') continue;
+        if (a.type === 'rock') drawRock(a);
+        else if (a.type === 'moss') drawMoss(a);
+        else if (a.type === 'plant') drawPlant(a);
+        else if (a.type === 'ornament') drawOrnament(a);
+      }
+    }
+
+    function pos(e){
+      var rect = canvas.getBoundingClientRect();
+      var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      var cx = t.clientX - rect.left, cy = t.clientY - rect.top;
+      return { x: cx * (W/rect.width), y: cy * (H/rect.height) };
+    }
+
+    // ---- interaction sound effects + haptics, synced to the actual gesture ----
+    var sfxCtx = null;
+    function ensureSfx(){
+      if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (sfxCtx.state === 'suspended') sfxCtx.resume();
+    }
+    function noiseBurst(dur, decayPow, filterType, freq, freqSpread, q, level){
+      ensureSfx();
+      var n = Math.floor(sfxCtx.sampleRate*dur);
+      var buffer = sfxCtx.createBuffer(1, n, sfxCtx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for (var i = 0; i < n; i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/n, decayPow);
+      var src = sfxCtx.createBufferSource(); src.buffer = buffer;
+      var filter = sfxCtx.createBiquadFilter();
+      filter.type = filterType; filter.frequency.value = freq + Math.random()*freqSpread; filter.Q.value = q;
+      var gain = sfxCtx.createGain(); gain.gain.value = level * (0.75+Math.random()*0.25);
+      src.connect(filter); filter.connect(gain); gain.connect(sfxCtx.destination);
+      src.start();
+    }
+    function playCrunch(intensity){ noiseBurst(0.05+Math.random()*0.05, 1.6, 'bandpass', 1100, 2200, 0.6, Math.min(0.85, 0.2+intensity*0.6)); }
+    function playSmoothSwish(){ noiseBurst(0.08+Math.random()*0.04, 1.1, 'lowpass', 700, 500, 0.7, 0.16); }
+    function playThunk(){ noiseBurst(0.09, 2.2, 'lowpass', 340, 160, 0.9, 0.6); }
+    function playRustle(){ noiseBurst(0.15, 1.2, 'highpass', 2400, 1200, 0.6, 0.28); }
+    function triggerHaptic(ms){ if (navigator.vibrate) navigator.vibrate(ms); }
+
+    function placeDecor(p){
+      var d = makeDecor(p.x, p.y, tool, variantByTool[tool]);
+      d.groupId = 'g' + (++groupCounter);
+      actions.push(d);
+      render();
+      if (tool === 'rock' || tool === 'ornament'){ playThunk(); triggerHaptic(12); }
+      else { playRustle(); triggerHaptic(6); }
+    }
+
+    function smoothAt(cx, cy, radius){
+      var next = [];
+      actions.forEach(function(a){
+        if (a.kind === 'rake'){
+          var segment = [];
+          a.pts.forEach(function(pt){
+            if (Math.hypot(pt.x-cx, pt.y-cy) > radius){
+              segment.push(pt);
+            } else if (segment.length > 1){
+              next.push({ kind:'rake', pts:segment, variant:a.variant, groupId:a.groupId });
+              segment = [];
+            } else {
+              segment = [];
+            }
+          });
+          if (segment.length > 1) next.push({ kind:'rake', pts:segment, variant:a.variant, groupId:a.groupId });
+        } else {
+          if (Math.hypot(a.x-cx, a.y-cy) > radius + decorFootprint(a)*0.5) next.push(a);
+        }
+      });
+      actions = next;
+    }
+
+    // the full render() redraws every existing stroke and decoration from scratch — cheap
+    // once, but too slow to call synchronously on every single pointermove during a fast
+    // drag once the garden has content in it. Coalesce to at most one real draw per animation
+    // frame so the browser can actually paint in between, instead of queuing up behind a
+    // backlog of full redraws and only catching up once the drag stops.
+    var renderPending = false;
+    function requestRender(){
+      if (renderPending) return;
+      renderPending = true;
+      requestAnimationFrame(function(){ renderPending = false; render(); });
+    }
+
+    var feedbackAccum = 0;
+    function onDown(e){
+      e.preventDefault();
+      var p = pos(e);
+      feedbackAccum = 0;
+      if (tool === 'rake'){ currentRake = [p]; requestRender(); playCrunch(0.55); triggerHaptic(8); }
+      else if (tool === 'smooth'){ smoothing = true; smoothAt(p.x, p.y, SMOOTH_RADIUS); requestRender(); playSmoothSwish(); }
+      else { placeDecor(p); }
+    }
+    function onMove(e){
+      if (tool === 'rake' && currentRake){
+        e.preventDefault();
+        var p = pos(e);
+        var prev = currentRake[currentRake.length-1];
+        currentRake.push(p);
+        requestRender();
+        feedbackAccum += Math.hypot(p.x-prev.x, p.y-prev.y);
+        while (feedbackAccum > 16){
+          feedbackAccum -= 16;
+          playCrunch(0.3+Math.random()*0.4);
+          triggerHaptic(5+Math.floor(Math.random()*4));
+        }
+      } else if (tool === 'smooth' && smoothing){
+        e.preventDefault();
+        var p2 = pos(e);
+        smoothAt(p2.x, p2.y, SMOOTH_RADIUS);
+        requestRender();
+        feedbackAccum += 8;
+        if (feedbackAccum > 26){ feedbackAccum = 0; playSmoothSwish(); }
+      }
+    }
+    function onUp(){
+      if (tool === 'rake' && currentRake && currentRake.length > 1){
+        actions.push({ kind:'rake', pts: currentRake, variant: variantByTool.rake, groupId: 'g' + (++groupCounter) });
+      }
+      currentRake = null;
+      smoothing = false;
+      requestRender();
+    }
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    canvas.addEventListener('touchstart', onDown, {passive:false});
+    canvas.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('touchend', onUp);
+
+    render();
+
+    // ---- cursor ghost ----
+    var canvasWrap = document.getElementById('canvasWrap');
+    var cursorGhost = document.getElementById('cursorGhost');
+    var RAKE_CURSOR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 3L6 11"/><path d="M2 11H10"/><path d="M3 11V16M5.3 11V16M7.6 11V16M9.9 11V16"/></svg>';
+    var SMOOTH_CURSOR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16H15L18 12H6Z"/><path d="M11 12V5"/><path d="M8 5H14"/></svg>';
+    function updateGhostCursor(){
+      var isDragTool = (tool === 'rake' || tool === 'smooth');
+      canvasWrap.classList.toggle('ghost-cursor', isDragTool);
+      cursorGhost.innerHTML = tool === 'smooth' ? SMOOTH_CURSOR_SVG : RAKE_CURSOR_SVG;
+    }
+    canvasWrap.addEventListener('pointermove', function(e){
+      var rect = canvasWrap.getBoundingClientRect();
+      cursorGhost.style.transform = 'translate(' + (e.clientX-rect.left-13) + 'px,' + (e.clientY-rect.top-13) + 'px)';
+      cursorGhost.style.opacity = 1;
+    });
+    canvasWrap.addEventListener('pointerleave', function(){ cursorGhost.style.opacity = 0; });
+
+    // ---- tool dock ----
+    var variantRow = document.getElementById('variantRow');
+    function renderVariantRow(){
+      variantRow.innerHTML = '';
+      variantOptions[tool].forEach(function(v){
+        var btn = document.createElement('button');
+        btn.className = 'swatch-btn' + (variantByTool[tool] === v.id ? ' active' : '');
+        btn.textContent = v[LANG] || v.en;
+        btn.addEventListener('click', function(){
+          variantByTool[tool] = v.id;
+          renderVariantRow();
+        });
+        variantRow.appendChild(btn);
+      });
+    }
+    renderVariantRow();
+    updateGhostCursor();
+
+    document.querySelectorAll('#viewFar .tool-btn[data-tool]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('#viewFar .tool-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        tool = btn.getAttribute('data-tool');
+        renderVariantRow();
+        updateGhostCursor();
+      });
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', function(){
+      if (!actions.length) return;
+      var gid = actions[actions.length-1].groupId;
+      while (actions.length && actions[actions.length-1].groupId === gid) actions.pop();
+      render();
+    });
+    document.getElementById('clearBtn').addEventListener('click', function(){
+      actions = [];
+      render();
+    });
+
+    document.querySelectorAll('.material-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        sandMaterial = btn.getAttribute('data-material');
+        document.querySelectorAll('.material-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        render();
+      });
+    });
+
+    // ---- day / night ----
+    var isNight = false;
+    function applyNight(){
+      canvasWrap.classList.toggle('night', isNight);
+      document.getElementById('sunIcon').style.display = isNight ? 'none' : 'block';
+      document.getElementById('moonIcon').style.display = isNight ? 'block' : 'none';
+      nightSwitch.classList.toggle('on', isNight);
+    }
+    document.getElementById('dayNightBtn').addEventListener('click', function(){
+      isNight = !isNight; applyNight();
+    });
+
+    var starsWrap = document.getElementById('stars');
+    for (var s = 0; s < 26; s++){
+      var star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = (Math.random()*100) + '%';
+      star.style.top = (Math.random()*60) + '%';
+      star.style.opacity = (0.4 + Math.random()*0.6).toFixed(2);
+      starsWrap.appendChild(star);
+    }
+
+    var particlesWrap = document.getElementById('particles');
+    var seasonLabels = {
+      spring: { en:'Spring · Cherry', es:'Primavera · Cerezo' }, summer: { en:'Summer · Evergreen', es:'Verano · Siempreverde' },
+      autumn: { en:'Autumn · Maple', es:'Otoño · Arce' }, winter: { en:'Winter · First Snow', es:'Invierno · Primera Nieve' }
+    };
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var currentSeason = 'summer';
+
+    function setSeason(season){
+      currentSeason = season;
+      document.getElementById('seasonBadge').textContent = seasonLabels[season][LANG] || seasonLabels[season].en;
+      document.querySelectorAll('.season-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-season') === season);
+      });
+      particlesWrap.innerHTML = '';
+      if (reduceMotion || season === 'summer') return;
+      var cls = season === 'spring' ? 'petal' : season === 'autumn' ? 'leaf' : 'snow';
+      var count = season === 'winter' ? 16 : 12;
+      for (var i = 0; i < count; i++){
+        var p = document.createElement('div');
+        p.className = 'particle ' + cls;
+        p.style.left = (Math.random()*96) + '%';
+        p.style.setProperty('--drift', (Math.random()*50 - 25) + 'px');
+        var dur = season === 'winter' ? (10 + Math.random()*8) : (7 + Math.random()*6);
+        p.style.animationDuration = dur + 's';
+        p.style.animationDelay = (-Math.random()*dur) + 's';
+        var size = 5 + Math.random()*5;
+        p.style.width = size + 'px'; p.style.height = size + 'px';
+        particlesWrap.appendChild(p);
+      }
+    }
+    document.querySelectorAll('.season-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ setSeason(btn.getAttribute('data-season')); });
+    });
+    setSeason('summer');
+
+    // ---- shared UI: tabs, view switch, settings, shop, audio, recording ----
+    document.querySelectorAll('.tab-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var target = btn.getAttribute('data-screen');
+        ['garden','shop','settings'].forEach(function(name){
+          document.getElementById('screen-' + name).classList.toggle('hidden', name !== target);
+        });
+      });
+    });
+
+    var viewFarEl = document.getElementById('viewFar');
+    var viewLevelsEl = document.getElementById('viewLevels');
+    var seasonStripEl = document.getElementById('seasonStrip');
+    var materialStripEl = document.getElementById('materialStrip');
+    document.querySelectorAll('.view-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var v = btn.getAttribute('data-view');
+        viewFarEl.classList.toggle('hidden', v !== 'far');
+        viewLevelsEl.classList.toggle('hidden', v !== 'levels');
+        seasonStripEl.style.display = v === 'far' ? 'flex' : 'none';
+        materialStripEl.style.display = v === 'levels' ? 'none' : 'flex';
+        if (v === 'levels' && typeof window.onEnterLevels === 'function') window.onEnterLevels();
+      });
+    });
+
+    var toastEl = document.getElementById('toast');
+    var toastTimer = null;
+    window.showToast = function(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+    };
+
+    var shopItems = [
+      { en:'Basic Stone Set', es:'Set de Piedras Básico', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#8A8A80' },
+      { en:'Moss Patch & Mound', es:'Musgo: Parche y Montículo', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#57683F' },
+      { en:'Bamboo (Basic)', es:'Bambú (Básico)', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#5B7A4A' },
+      { en:'Craggy Rock Set', es:'Set de Rocas Escarpadas', priceEn:'$1.99', priceEs:'$1.99', locked:true, color:'#4E4E46' },
+      { en:'Koi Pond Ornament', es:'Adorno de Estanque Koi', priceEn:'$2.99', priceEs:'$2.99', locked:true, color:'#4A6E7A' },
+      { en:'Stone Lantern', es:'Farol de Piedra', priceEn:'$1.99', priceEs:'$1.99', locked:true, color:'#6E6357' },
+      { en:'Maple Bonsai · Autumn', es:'Bonsái de Arce · Otoño', priceEn:'Plus only', priceEs:'Solo Plus', locked:true, color:'#B85C3D' },
+      { en:'First Snow Soundscape', es:'Paisaje Sonoro de Primera Nevada', priceEn:'Plus only', priceEs:'Solo Plus', locked:true, color:'#8FA3AE' }
+    ];
+    var shopGrid = document.getElementById('shopGrid');
+    function renderShop(){
+      shopGrid.innerHTML = '';
+      shopItems.forEach(function(item){
+        var itemName = item[LANG] || item.en;
+        var card = document.createElement('div');
+        card.className = 'shop-card';
+        var swatch = document.createElement('div');
+        swatch.className = 'shop-swatch';
+        swatch.style.background = item.color;
+        var name = document.createElement('div');
+        name.className = 'shop-name'; name.textContent = itemName;
+        var price = document.createElement('div');
+        price.className = 'shop-price' + (item.locked ? ' locked' : ''); price.textContent = LANG === 'es' ? item.priceEs : item.priceEn;
+        var btn = document.createElement('button');
+        btn.className = 'shop-btn';
+        btn.textContent = item.locked ? t('shopUnlock') : t('shopUse');
+        btn.addEventListener('click', function(){
+          showToast(item.locked
+            ? (LANG === 'es' ? ('"' + itemName + '" es parte de Plus o una compra única · aún sin pagos reales en este prototipo') : ('"' + itemName + '" is part of Plus or a one-time purchase · not wired to real payments yet'))
+            : (LANG === 'es' ? ('"' + itemName + '" ya está disponible en tus herramientas de jardín') : ('"' + itemName + '" is already available in your garden tools')));
+        });
+        card.appendChild(swatch); card.appendChild(name); card.appendChild(price); card.appendChild(btn);
+        shopGrid.appendChild(card);
+      });
+    }
+    renderShop();
+
+    var nightSwitch = document.getElementById('nightSwitch');
+    nightSwitch.addEventListener('click', function(){ isNight = !isNight; applyNight(); });
+    applyNight();
+
+    document.getElementById('resetGardenBtn').addEventListener('click', function(){
+      actions = []; render();
+      showToast(t('resetToast'));
+    });
+
+    // ---- ambient sound (procedural, no external audio files) ----
+    var audioCtx = null, noiseSource = null, masterGain = null, filterNode = null, lfo = null, lfoGain = null;
+    var soundOn = false;
+    var soundSwitch = document.getElementById('soundSwitch');
+    var volumeSlider = document.getElementById('volumeSlider');
+
+    function ensureAudio(){
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var bufferSize = audioCtx.sampleRate * 2;
+      var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for (var i = 0; i < bufferSize; i++) data[i] = Math.random()*2 - 1;
+      noiseSource = audioCtx.createBufferSource();
+      noiseSource.buffer = buffer; noiseSource.loop = true;
+      filterNode = audioCtx.createBiquadFilter();
+      filterNode.type = 'lowpass';
+      filterNode.frequency.value = 700;
+      lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.08;
+      lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 250;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filterNode.frequency);
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0;
+      noiseSource.connect(filterNode);
+      filterNode.connect(masterGain);
+      masterGain.connect(audioCtx.destination);
+      noiseSource.start();
+      lfo.start();
+    }
+    function currentVolume(){ return parseInt(volumeSlider.value, 10) / 100; }
+    soundSwitch.addEventListener('click', function(){
+      soundOn = !soundOn;
+      soundSwitch.classList.toggle('on', soundOn);
+      if (soundOn){
+        ensureAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        masterGain.gain.setTargetAtTime(currentVolume(), audioCtx.currentTime, 0.4);
+      } else if (masterGain) {
+        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.4);
+      }
+    });
+    volumeSlider.addEventListener('input', function(){
+      if (soundOn && masterGain) masterGain.gain.setTargetAtTime(currentVolume(), audioCtx.currentTime, 0.1);
+    });
+
+    // ---- shared recorder factory ----
+    function pickMime(){
+      var types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      for (var i = 0; i < types.length; i++){
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) return types[i];
+      }
+      return '';
+    }
+    window.setupRecorder = function(cfg){
+      var recording = false;
+      cfg.btn.addEventListener('click', function(){
+        if (recording) return;
+        if (!window.MediaRecorder || !cfg.canvas.captureStream){
+          showToast(t('recordUnsupported'));
+          return;
+        }
+        recording = true;
+        cfg.btn.classList.add('recording');
+        cfg.status.classList.remove('hidden');
+        cfg.result.classList.add('hidden');
+        var stream = cfg.canvas.captureStream(30);
+        var mime = pickMime();
+        var recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        var chunks = [];
+        recorder.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = function(){
+          recording = false;
+          cfg.btn.classList.remove('recording');
+          cfg.status.classList.add('hidden');
+          var blob = new Blob(chunks, { type: mime || 'video/webm' });
+          var url = URL.createObjectURL(blob);
+          cfg.video.src = url;
+          cfg.download.href = url;
+          cfg.result.classList.remove('hidden');
+          cfg.video.play().catch(function(){});
+        };
+        recorder.start();
+        setTimeout(function(){ if (recorder.state !== 'inactive') recorder.stop(); }, 4000);
+      });
+      cfg.closeBtn.addEventListener('click', function(){ cfg.result.classList.add('hidden'); });
+    };
+
+    setupRecorder({
+      canvas: canvas, btn: document.getElementById('recordBtn'), status: document.getElementById('recordStatus'),
+      result: document.getElementById('clipResult'), video: document.getElementById('clipVideo'),
+      download: document.getElementById('clipDownload'), closeBtn: document.getElementById('clipCloseBtn')
+    });
+
+    // ---- language toggle: swaps every static string + re-renders the language-dependent bits ----
+    var langBtn = document.getElementById('langBtn');
+    function applyLanguage(){
+      langBtn.textContent = LANG === 'es' ? 'EN' : 'ES';
+      document.getElementById('stageTitleH1').textContent = t('stageTitleH1');
+      document.getElementById('stageTitleP').textContent = t('stageTitleP');
+      document.getElementById('appTitleH2').textContent = t('appTitleH2');
+      setBtnText(document.querySelector('.view-btn[data-view="far"]'), t('viewFar'));
+      setBtnText(document.querySelector('.view-btn[data-view="levels"]'), t('viewLevels'));
+      document.querySelector('.season-btn[data-season="spring"]').textContent = t('seasonSpring');
+      document.querySelector('.season-btn[data-season="summer"]').textContent = t('seasonSummer');
+      document.querySelector('.season-btn[data-season="autumn"]').textContent = t('seasonAutumn');
+      document.querySelector('.season-btn[data-season="winter"]').textContent = t('seasonWinter');
+      setBtnText(document.querySelector('.material-btn[data-material="white"]'), t('materialWhite'));
+      setBtnText(document.querySelector('.material-btn[data-material="stone"]'), t('materialStone'));
+      setBtnText(document.querySelector('.material-btn[data-material="black"]'), t('materialBlack'));
+      setBtnText(document.querySelector('.material-btn[data-material="clay"]'), t('materialClay'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="rake"]'), t('toolRake'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="rock"]'), t('toolRock'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="moss"]'), t('toolMoss'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="plant"]'), t('toolPlant'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="ornament"]'), t('toolOrnament'));
+      setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="smooth"]'), t('toolSmooth'));
+      setBtnText(document.getElementById('undoBtn'), t('actionUndo'));
+      setBtnText(document.getElementById('clearBtn'), t('actionClear'));
+      setBtnText(document.getElementById('recordBtn'), t('actionRecord'));
+      setBtnText(document.getElementById('recordStatus'), t('recordStatus'));
+      document.getElementById('clipDownload').textContent = t('clipDownload');
+      document.getElementById('clipCloseBtn').textContent = t('clipCloseBtn');
+      document.getElementById('farGhostNote').textContent = t('farGhostNote');
+      document.getElementById('levelsGridTitle').textContent = t('levelsGridTitle');
+      document.getElementById('openCollectionBtn').textContent = t('openCollectionBtn');
+      document.getElementById('backToGridBtn').textContent = t('backToGridBtn');
+      document.getElementById('retryLevelBtn').textContent = t('retryLevelBtn');
+      document.getElementById('winBackBtn').textContent = t('winBackBtn');
+      document.getElementById('winNextBtn').textContent = t('winNextBtn');
+      document.getElementById('levelGhostNote').textContent = t('levelGhostNote');
+      document.getElementById('collectionTitle').textContent = t('collectionTitle');
+      document.getElementById('closeCollectionBtn').textContent = t('closeCollectionBtn');
+      setBtnText(document.querySelector('.tab-btn[data-screen="garden"]'), t('tabGarden'));
+      setBtnText(document.querySelector('.tab-btn[data-screen="shop"]'), t('tabShop'));
+      setBtnText(document.querySelector('.tab-btn[data-screen="settings"]'), t('tabSettings'));
+      document.getElementById('soundLabel').textContent = t('soundLabel');
+      document.getElementById('soundSub').textContent = t('soundSub');
+      document.getElementById('volumeLabel').textContent = t('volumeLabel');
+      document.getElementById('nightLabel').textContent = t('nightLabel');
+      document.getElementById('resetLabel').textContent = t('resetLabel');
+      document.getElementById('resetSub').textContent = t('resetSub');
+      document.getElementById('resetGardenBtn').textContent = t('resetGardenBtn');
+      document.getElementById('aboutNote').textContent = t('aboutNote');
+      document.getElementById('shopBanner').innerHTML = t('shopBanner');
+      renderVariantRow();
+      renderShop();
+      setSeason(currentSeason);
+      if (typeof window.refreshLevelsLang === 'function') window.refreshLevelsLang();
+    }
+    langBtn.addEventListener('click', function(){
+      LANG = LANG === 'es' ? 'en' : 'es';
+      try { localStorage.setItem('zenLang', LANG); } catch(e){}
+      applyLanguage();
+    });
+    applyLanguage();
+  })();
+
+  // ===================== LEVELS: challenge mode + card collection =====================
+  (function(){
+    function mulberry32(seed){
+      var s = seed >>> 0;
+      return function(){
+        s |= 0; s = (s + 0x6D2B79F5) | 0;
+        var t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // ---- original geometric pattern generators (no copied artwork, pure formulas) ----
+    function patWave(W,H,p){
+      var out = [];
+      var rows = p.rows || 1;
+      for (var r = 0; r < rows; r++){
+        var y0 = H*(0.32 + r*0.2);
+        var seg = [];
+        for (var x = W*0.12; x <= W*0.88; x += 8){ seg.push({ x:x, y:y0 + Math.sin((x/W)*Math.PI*2*p.freq + r*1.4)*H*p.amp }); }
+        out.push(seg);
+      }
+      return out;
+    }
+    function patSCurve(W,H,p){
+      var pts = [], steps = 90;
+      for (var i = 0; i <= steps; i++){
+        var t = i/steps;
+        pts.push({ x: W*0.15 + t*W*0.7, y: H*0.5 + Math.sin(t*Math.PI*2)*H*p.amp });
+      }
+      return [pts];
+    }
+    function patZigzag(W,H,p){
+      var pts = [], count = p.count, amp = p.amp;
+      for (var i = 0; i <= count; i++){
+        pts.push({ x: W*0.15 + (W*0.7)*(i/count), y: H*0.5 + (i%2 ? amp : -amp) });
+      }
+      return [pts];
+    }
+    function patRings(W,H,p){
+      var cx = W*0.5, cy = H*0.48, out = [];
+      for (var i = 1; i <= p.count; i++){
+        var r = i*p.spacing, pts = [];
+        for (var a = 0; a <= 64; a++){ var t = a/64*Math.PI*2; pts.push({ x:cx+Math.cos(t)*r, y:cy+Math.sin(t)*r*0.85 }); }
+        out.push(pts);
+      }
+      return out;
+    }
+    function patSpiral(W,H,p){
+      var cx = W*0.5, cy = H*0.48, maxR = Math.min(W,H)*0.34, steps = 150, pts = [];
+      for (var i = 0; i <= steps; i++){
+        var t = i/steps, ang = t*Math.PI*2*p.turns, r = t*maxR;
+        pts.push({ x: cx+Math.cos(ang)*r, y: cy+Math.sin(ang)*r*0.9 });
+      }
+      return [pts];
+    }
+    function patFigureEight(W,H,p){
+      var cx = W*0.5, cy = H*0.48, r = Math.min(W,H)*0.24, steps = 130, pts = [];
+      for (var i = 0; i <= steps; i++){ var t = i/steps*Math.PI*2; pts.push({ x:cx+Math.sin(t)*r, y:cy+Math.sin(t)*Math.cos(t)*r }); }
+      return [pts];
+    }
+    function patSunburst(W,H,p){
+      var cx = W*0.5, cy = H*0.5, len = Math.min(W,H)*0.32, out = [];
+      for (var i = 0; i < p.rays; i++){
+        var ang = (i/p.rays)*Math.PI*2, pts = [];
+        for (var t = 0; t <= 1; t += 0.08){ pts.push({ x:cx+Math.cos(ang)*len*t, y:cy+Math.sin(ang)*len*t*0.9 }); }
+        out.push(pts);
+      }
+      return out;
+    }
+    function patPetals(W,H,p){
+      var cx = W*0.5, cy = H*0.46, r = Math.min(W,H)*0.22, out = [];
+      for (var i = 0; i < p.petals; i++){
+        var base = (i/p.petals)*Math.PI*2, pts = [];
+        for (var a = 0; a <= 30; a++){
+          var t = a/30*Math.PI, rad = Math.sin(t)*r, ang = base + (t-Math.PI/2)*0.6;
+          pts.push({ x: cx+Math.cos(ang)*rad, y: cy+Math.sin(ang)*rad*0.9 });
+        }
+        out.push(pts);
+      }
+      return out;
+    }
+
+    var GENERATORS = [patWave, patSCurve, patZigzag, patRings, patSpiral, patFigureEight, patSunburst, patPetals];
+    var CARD_TYPES = ['karesansui', 'incense', 'pond', 'bamboo'];
+    var NAMES_EN = [
+      'First Light','One Curve','Shallow Ripple','Rising Wind','Garden Path','Stone\'s Edge','First Snowfall','Falling Leaves',
+      'Moonlit Corridor','Bamboo Sway','River\'s Turn','Deep Moss','Fading Mist','Still Water','Distant Hills','Pine Wind',
+      'Drifting Clouds','One Encounter','New Bud','Lantern Glow','Cool Rain','Bell at Dusk','Quiet Trail','Winding Stream',
+      'Falling Petals','Fresh Rain','Small Pond','Idle Steps','Lone Boat','Snow on the River','Moon Among Pines','Spring on Stone',
+      'Zen Garden','Hidden Path','Sparse Shadows','Quiet Fragrance','Rain on Leaves','Wind in Wheat','Ink Wash','Sky and Cloud',
+      'Homeward','Autumn Chrysanthemum','Water\'s End','Watching Clouds','Simple Grace','Open Mind','Gentle Water','Quiet Harmony',
+      'Clear Heart','Distant View'
+    ];
+    var NAMES_ES = [
+      'Primera Luz','Una Curva','Onda Suave','Viento Naciente','Sendero del Jardín','Filo de Piedra','Primera Nevada','Hojas Caídas',
+      'Corredor de Luna','Vaivén de Bambú','Recodo del Río','Musgo Profundo','Niebla que Se Disipa','Agua Quieta','Colinas Lejanas','Viento de Pinos',
+      'Nubes a la Deriva','Un Encuentro','Nuevo Brote','Brillo del Farol','Lluvia Fresca','Campana al Atardecer','Sendero Silencioso','Arroyo Serpenteante',
+      'Pétalos Caídos','Lluvia Nueva','Pequeño Estanque','Pasos Tranquilos','Barca Solitaria','Nieve en el Río','Luna entre Pinos','Primavera en la Piedra',
+      'Jardín Zen','Sendero Oculto','Sombras Dispersas','Fragancia Silenciosa','Lluvia en las Hojas','Viento en el Trigo','Lavado de Tinta','Cielo y Nube',
+      'Rumbo a Casa','Crisantemo de Otoño','Fin del Agua','Mirando las Nubes','Gracia Simple','Mente Abierta','Agua Serena','Armonía Silenciosa',
+      'Corazón Claro','Vista Lejana'
+    ];
+    function lname(lv){ return (LANG === 'es' ? NAMES_ES[lv.id-1] : NAMES_EN[lv.id-1]) || ('#' + lv.id); }
+
+    function buildLevels(){
+      var levels = [];
+      for (var i = 0; i < 50; i++){
+        var gen = GENERATORS[i % GENERATORS.length];
+        var d = i < 10 ? 1 : (i < 25 ? 2 : (i < 40 ? 3 : 4));
+        var params = {};
+        if (gen === patWave) params = { amp: 0.05+d*0.015, freq: 1+Math.floor(i/8), rows: d>=3?2:1 };
+        else if (gen === patSCurve) params = { amp: 0.08+d*0.02 };
+        else if (gen === patZigzag) params = { amp: 30+d*10, count: 4+d };
+        else if (gen === patRings) params = { count: 2+d, spacing: 30+(i%3)*8 };
+        else if (gen === patSpiral) params = { turns: 1.5+d*0.7 };
+        else if (gen === patFigureEight) params = {};
+        else if (gen === patSunburst) params = { rays: 5+d };
+        else if (gen === patPetals) params = { petals: 4+d };
+        levels.push({
+          id: i+1, generator: gen, params: params,
+          cardType: CARD_TYPES[i % CARD_TYPES.length],
+          rare: (i+1) % 10 === 0
+        });
+      }
+      return levels;
+    }
+    var LEVELS = buildLevels();
+
+    // ---- progress persistence ----
+    var progress;
+    try { progress = JSON.parse(localStorage.getItem('zenLevelsProgress') || '{}'); } catch(e){ progress = {}; }
+    if (!progress.completed) progress.completed = [];
+    if (!progress.unlocked) progress.unlocked = 1;
+    function saveProgress(){ try { localStorage.setItem('zenLevelsProgress', JSON.stringify(progress)); } catch(e){} }
+    function markCompleted(id){
+      if (progress.completed.indexOf(id) === -1) progress.completed.push(id);
+      progress.unlocked = Math.max(progress.unlocked, id+1);
+      saveProgress();
+    }
+
+    // ---- card rendering ----
+    function drawKaresansuiCard(cx, w, h, rand, level){
+      var g = cx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, '#25302B'); g.addColorStop(0.55, '#3C463A');
+      g.addColorStop(0.56, '#DED9C6'); g.addColorStop(1, '#C7BE9E');
+      cx.fillStyle = g; cx.fillRect(0,0,w,h);
+      cx.beginPath(); cx.arc(w*0.78, h*0.2, 16, 0, Math.PI*2);
+      cx.fillStyle = 'rgba(255,250,235,0.9)'; cx.fill();
+      cx.strokeStyle = 'rgba(90,80,60,0.35)'; cx.lineWidth = 1.4;
+      for (var i = 0; i < 7; i++){
+        var y = h*0.6 + i*10;
+        cx.beginPath();
+        for (var x = 10; x <= w-10; x += 6){ cx.lineTo(x, y+Math.sin(x*0.05+i)*3); }
+        cx.stroke();
+      }
+      var rockCount = 1 + Math.floor(rand()*2);
+      for (var r = 0; r < rockCount; r++){
+        cx.save();
+        cx.translate(w*(0.28+rand()*0.44), h*(0.64+rand()*0.16));
+        var scale = 0.5+rand()*0.35;
+        cx.scale(scale, scale);
+        var radii = []; for (var k = 0; k < 14; k++) radii.push(30*(1+(rand()-0.5)*0.3));
+        smoothBlobPathOn(cx, radii, 0.8);
+        var rg = cx.createRadialGradient(-10,-10,4,0,0,40);
+        rg.addColorStop(0, '#6E6E62'); rg.addColorStop(1, '#2A2A24');
+        cx.fillStyle = rg; cx.fill();
+        cx.restore();
+      }
+      cx.strokeStyle = 'rgba(255,255,255,0.25)'; cx.lineWidth = 2; cx.strokeRect(6,6,w-12,h-12);
+      cx.fillStyle = 'rgba(20,20,16,0.55)'; cx.fillRect(0,h-36,w,36);
+      cx.fillStyle = '#F1EFE6'; cx.font = '15px "Songti SC","Noto Serif SC",serif'; cx.textAlign = 'center';
+      cx.fillText(lname(level), w/2, h-13);
+    }
+    function drawIncenseCard(cx, w, h, rand, level){
+      var g = cx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, '#1B1712'); g.addColorStop(1, '#2E2318');
+      cx.fillStyle = g; cx.fillRect(0,0,w,h);
+      cx.fillStyle = '#4A3A28'; cx.fillRect(w*0.4, h*0.72, w*0.2, h*0.045);
+      cx.strokeStyle = '#8A6B45'; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(w*0.5, h*0.72); cx.lineTo(w*0.5, h*0.36); cx.stroke();
+      cx.beginPath(); cx.arc(w*0.5, h*0.36, 3, 0, Math.PI*2); cx.fillStyle = '#E8794A'; cx.fill();
+      cx.strokeStyle = 'rgba(230,225,210,0.5)'; cx.lineWidth = 2.2; cx.lineCap = 'round';
+      var sx = w*0.5, sy = h*0.36, drift = rand() < 0.5 ? 1 : -1;
+      cx.beginPath(); cx.moveTo(sx, sy);
+      for (var i = 1; i <= 5; i++){
+        var yy = sy - i*(h*0.1);
+        var xx = sx + Math.sin(i*1.3 + rand()*2)*w*0.09*drift*i*0.4;
+        cx.globalAlpha = 0.5 - i*0.08;
+        cx.lineTo(xx, yy);
+      }
+      cx.stroke(); cx.globalAlpha = 1;
+      cx.strokeStyle = 'rgba(255,255,255,0.15)'; cx.lineWidth = 2; cx.strokeRect(6,6,w-12,h-12);
+      cx.fillStyle = 'rgba(0,0,0,0.4)'; cx.fillRect(0,h-36,w,36);
+      cx.fillStyle = '#EDE6D8'; cx.font = '15px "Songti SC","Noto Serif SC",serif'; cx.textAlign = 'center';
+      cx.fillText(lname(level), w/2, h-13);
+    }
+    function drawPondCard(cx, w, h, rand, level){
+      var g = cx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, '#0E1B24'); g.addColorStop(1, '#1C3446');
+      cx.fillStyle = g; cx.fillRect(0,0,w,h);
+      var mx = w*(0.62+rand()*0.2), my = h*(0.16+rand()*0.1);
+      var glow = cx.createRadialGradient(mx,my,2,mx,my,50);
+      glow.addColorStop(0,'rgba(255,250,230,0.55)'); glow.addColorStop(1,'rgba(255,250,230,0)');
+      cx.fillStyle = glow; cx.beginPath(); cx.arc(mx,my,50,0,Math.PI*2); cx.fill();
+      cx.beginPath(); cx.arc(mx,my,14,0,Math.PI*2); cx.fillStyle = '#FBF3DE'; cx.fill();
+      cx.strokeStyle = 'rgba(180,210,230,0.25)'; cx.lineWidth = 1;
+      for (var r = 0; r < 4; r++){ cx.beginPath(); cx.ellipse(w*0.5, h*0.72, 30+r*16, 10+r*5, 0, 0, Math.PI*2); cx.stroke(); }
+      var koiCount = 2 + Math.floor(rand()*3);
+      var palette = ['#E2703A','#D94F3C','#F0B33E','#EDEDED'];
+      for (var i = 0; i < koiCount; i++){
+        cx.save();
+        cx.translate(w*(0.2+rand()*0.6), h*(0.58+rand()*0.24));
+        cx.rotate((rand()-0.5)*1.4);
+        var kscale = 0.55+rand()*0.5;
+        cx.scale(kscale, kscale);
+        cx.beginPath();
+        cx.moveTo(-18,0); cx.quadraticCurveTo(-6,-8,10,0); cx.quadraticCurveTo(-6,8,-18,0);
+        cx.closePath();
+        cx.fillStyle = palette[Math.floor(rand()*palette.length)];
+        cx.globalAlpha = 0.85; cx.fill(); cx.globalAlpha = 1;
+        cx.beginPath(); cx.moveTo(10,0); cx.lineTo(20,-6); cx.lineTo(20,6); cx.closePath(); cx.fill();
+        cx.restore();
+      }
+      cx.strokeStyle = 'rgba(255,255,255,0.2)'; cx.lineWidth = 2; cx.strokeRect(6,6,w-12,h-12);
+      cx.fillStyle = 'rgba(0,0,0,0.45)'; cx.fillRect(0,h-36,w,36);
+      cx.fillStyle = '#EAF1F5'; cx.font = '15px "Songti SC","Noto Serif SC",serif'; cx.textAlign = 'center';
+      cx.fillText(lname(level), w/2, h-13);
+    }
+    function drawBambooCard(cx, w, h, rand, level){
+      var g = cx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, '#DCE7D6'); g.addColorStop(0.5, '#A9C0A0'); g.addColorStop(1, '#3F5A3A');
+      cx.fillStyle = g; cx.fillRect(0,0,w,h);
+      var stalkCount = 4 + Math.floor(rand()*3);
+      for (var i = 0; i < stalkCount; i++){
+        var x = w*(0.06 + (i/stalkCount)*0.92) + (rand()-0.5)*14;
+        var depth = rand();
+        var topY = h*(0.03+rand()*0.15);
+        cx.save();
+        cx.globalAlpha = 0.35+depth*0.6;
+        cx.strokeStyle = depth > 0.5 ? '#2E4A28' : '#7C9670';
+        cx.lineWidth = 4+depth*4;
+        cx.beginPath();
+        cx.moveTo(x, h+4);
+        cx.quadraticCurveTo(x+(rand()-0.5)*20, h*0.5, x+(rand()-0.5)*10, topY);
+        cx.stroke();
+        cx.restore();
+      }
+      var mist = cx.createLinearGradient(0, h*0.28, 0, h*0.6);
+      mist.addColorStop(0, 'rgba(255,255,255,0)'); mist.addColorStop(0.5, 'rgba(255,255,255,0.35)'); mist.addColorStop(1, 'rgba(255,255,255,0)');
+      cx.fillStyle = mist; cx.fillRect(0, h*0.25, w, h*0.35);
+      cx.strokeStyle = 'rgba(255,255,255,0.3)'; cx.lineWidth = 2; cx.strokeRect(6,6,w-12,h-12);
+      cx.fillStyle = 'rgba(20,30,16,0.5)'; cx.fillRect(0,h-36,w,36);
+      cx.fillStyle = '#F1F6EC'; cx.font = '15px "Songti SC","Noto Serif SC",serif'; cx.textAlign = 'center';
+      cx.fillText(lname(level), w/2, h-13);
+    }
+    // a small red (or gold, for rare cards) ink seal — cheap but reads as "considered" on
+    // every card, the way a real painting or collectible print would carry a stamp
+    function drawSeal(cx, w, h, rare){
+      cx.save();
+      cx.translate(w*0.86, h*0.13);
+      var sz = 14;
+      cx.fillStyle = rare ? 'rgba(214,168,74,0.92)' : 'rgba(178,42,34,0.88)';
+      cx.beginPath();
+      cx.moveTo(-sz+3,-sz); cx.lineTo(sz-3,-sz); cx.quadraticCurveTo(sz,-sz,sz,-sz+3);
+      cx.lineTo(sz,sz-3); cx.quadraticCurveTo(sz,sz,sz-3,sz);
+      cx.lineTo(-sz+3,sz); cx.quadraticCurveTo(-sz,sz,-sz,sz-3);
+      cx.lineTo(-sz,-sz+3); cx.quadraticCurveTo(-sz,-sz,-sz+3,-sz);
+      cx.closePath(); cx.fill();
+      cx.fillStyle = 'rgba(255,248,235,0.92)';
+      if (rare){
+        cx.beginPath();
+        for (var i = 0; i < 5; i++){
+          var a1 = -Math.PI/2 + i*(Math.PI*2/5);
+          var a2 = a1 + Math.PI/5;
+          var x1 = Math.cos(a1)*6.5, y1 = Math.sin(a1)*6.5;
+          var x2 = Math.cos(a2)*2.6, y2 = Math.sin(a2)*2.6;
+          if (i === 0) cx.moveTo(x1,y1); else cx.lineTo(x1,y1);
+          cx.lineTo(x2,y2);
+        }
+        cx.closePath(); cx.fill();
+      } else {
+        for (var p = 0; p < 4; p++){
+          cx.save();
+          cx.rotate(p*Math.PI/2);
+          cx.beginPath();
+          cx.ellipse(0,-4,2.4,5,0,0,Math.PI*2);
+          cx.fill();
+          cx.restore();
+        }
+      }
+      cx.restore();
+    }
+    function drawPaperGrain(cx, w, h, rand){
+      cx.save();
+      cx.globalAlpha = 0.05;
+      for (var i = 0; i < 220; i++){
+        cx.fillStyle = rand() < 0.5 ? '#000' : '#fff';
+        cx.fillRect(rand()*w, rand()*h, 1, 1);
+      }
+      cx.restore();
+    }
+    function drawRareFrame(cx, w, h){
+      cx.save();
+      cx.strokeStyle = 'rgba(230,180,90,0.9)'; cx.lineWidth = 3; cx.strokeRect(3,3,w-6,h-6);
+      cx.strokeStyle = 'rgba(230,180,90,0.5)'; cx.lineWidth = 1; cx.strokeRect(9,9,w-18,h-18);
+      cx.restore();
+    }
+    function renderCardInto(canvasEl, level){
+      var cx = canvasEl.getContext('2d');
+      var rand = mulberry32(level.id*97 + 13);
+      var w = canvasEl.width, h = canvasEl.height;
+      if (level.cardType === 'karesansui') drawKaresansuiCard(cx, w, h, rand, level);
+      else if (level.cardType === 'incense') drawIncenseCard(cx, w, h, rand, level);
+      else if (level.cardType === 'pond') drawPondCard(cx, w, h, rand, level);
+      else drawBambooCard(cx, w, h, rand, level);
+      drawPaperGrain(cx, w, h, rand);
+      drawSeal(cx, w, h, level.rare);
+      if (level.rare) drawRareFrame(cx, w, h);
+    }
+
+    // ---- level grid ----
+    var levelGrid = document.getElementById('levelGrid');
+    function renderLevelGrid(){
+      levelGrid.innerHTML = '';
+      LEVELS.forEach(function(lv){
+        var completed = progress.completed.indexOf(lv.id) >= 0;
+        var locked = lv.id > progress.unlocked;
+        var node = document.createElement('button');
+        node.className = 'level-node' + (completed?' completed':'') + (locked?' locked':'') + (lv.rare?' card-rare':'');
+        node.textContent = lv.id;
+        if (completed){ var star = document.createElement('span'); star.className = 'star'; star.textContent = '★'; node.appendChild(star); }
+        else if (lv.rare && !locked){ var gem = document.createElement('span'); gem.className = 'star'; gem.textContent = '◆'; node.appendChild(gem); }
+        if (!locked) node.addEventListener('click', function(){ openLevelPlay(lv); });
+        levelGrid.appendChild(node);
+      });
+    }
+
+    // ---- level play ----
+    var subLevelGrid = document.getElementById('subLevelGrid');
+    var subLevelPlay = document.getElementById('subLevelPlay');
+    var subCollection = document.getElementById('subCollection');
+    var levelCanvas = document.getElementById('levelCanvas');
+    var levelCtx = levelCanvas.getContext('2d');
+    var levelW = levelCanvas.width, levelH = levelCanvas.height;
+    var levelPlayTitle = document.getElementById('levelPlayTitle');
+    var winOverlay = document.getElementById('winOverlay');
+    var progressFill = document.getElementById('progressFill');
+    var progressLabel = document.getElementById('progressLabel');
+
+    var currentLevel = null;
+    var guidePaths = [];
+    var guideSamples = [];
+    var userStrokes = [];
+    var currentStroke = null;
+
+    function startLevel(level){
+      currentLevel = level;
+      userStrokes = [];
+      currentStroke = null;
+      guidePaths = level.generator(levelW, levelH, level.params);
+      guideSamples = [];
+      guidePaths.forEach(function(strokePts){
+        for (var i = 0; i < strokePts.length; i += 2) guideSamples.push({ x: strokePts[i].x, y: strokePts[i].y, covered: false });
+      });
+      winOverlay.classList.add('hidden');
+      levelPlayTitle.textContent = (LANG === 'es' ? 'Nivel ' : 'Level ') + level.id + ' · ' + lname(level);
+      updateProgress();
+      renderLevel();
+    }
+
+    function renderLevel(){
+      var mat = SAND_MATERIALS[sandMaterial];
+      var g = levelCtx.createLinearGradient(0,0,0,levelH);
+      g.addColorStop(0, mat.top); g.addColorStop(1, mat.bottom);
+      levelCtx.fillStyle = g; levelCtx.fillRect(0,0,levelW,levelH);
+      levelCtx.fillStyle = levelCtx.createPattern(getGrainTile(sandMaterial), 'repeat');
+      levelCtx.fillRect(0,0,levelW,levelH);
+      levelCtx.save();
+      levelCtx.setLineDash([6,7]);
+      levelCtx.strokeStyle = 'rgba(60,50,30,0.4)';
+      levelCtx.lineWidth = 2;
+      guidePaths.forEach(function(pts){
+        levelCtx.beginPath();
+        pts.forEach(function(pt,i){ if (i===0) levelCtx.moveTo(pt.x,pt.y); else levelCtx.lineTo(pt.x,pt.y); });
+        levelCtx.stroke();
+      });
+      levelCtx.restore();
+      userStrokes.forEach(function(pts){ drawGrooveOn(levelCtx, pts, 'fine', sandMaterial); });
+      if (currentStroke && currentStroke.length > 1) drawGrooveOn(levelCtx, currentStroke, 'fine', sandMaterial);
+    }
+
+    function updateCoverage(pts){
+      pts.forEach(function(pt){
+        guideSamples.forEach(function(s){
+          // tolerance must stay smaller than the spacing between neighboring guide
+          // samples — otherwise one touch also marks its untouched neighbors as
+          // "covered", which is what let the level finish before you'd actually
+          // traced the whole pattern
+          if (!s.covered && Math.hypot(s.x-pt.x, s.y-pt.y) < 11) s.covered = true;
+        });
+      });
+    }
+    function coveragePercent(){
+      if (!guideSamples.length) return 0;
+      var c = 0; guideSamples.forEach(function(s){ if (s.covered) c++; });
+      return c/guideSamples.length;
+    }
+    function updateProgress(){
+      var pct = Math.round(coveragePercent()*100);
+      progressFill.style.width = pct + '%';
+      progressLabel.textContent = pct + '%';
+    }
+
+    function winLevel(){
+      markCompleted(currentLevel.id);
+      renderCardInto(document.getElementById('winCardCanvas'), currentLevel);
+      document.querySelector('.win-card').classList.toggle('card-rare', !!currentLevel.rare);
+      var wonName = lname(currentLevel);
+      document.getElementById('winTitle').textContent = LANG === 'es'
+        ? (currentLevel.rare ? ('★ Rara · "' + wonName + '"') : ('"' + wonName + '" añadida a tu colección'))
+        : (currentLevel.rare ? ('★ Rare · "' + wonName + '"') : ('"' + wonName + '" added to your collection'));
+      var nextBtn = document.getElementById('winNextBtn');
+      var next = LEVELS[currentLevel.id];
+      nextBtn.style.display = next ? 'inline-block' : 'none';
+      winOverlay.classList.remove('hidden');
+    }
+
+    function levelPos(e){
+      var rect = levelCanvas.getBoundingClientRect();
+      var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      return { x: (t.clientX-rect.left)*(levelW/rect.width), y: (t.clientY-rect.top)*(levelH/rect.height) };
+    }
+    // same fix as the far view: don't let a full redraw run synchronously on every
+    // pointermove, or fast drags outrun the browser's ability to actually paint
+    var levelRenderPending = false;
+    function render_(){
+      if (levelRenderPending) return;
+      levelRenderPending = true;
+      requestAnimationFrame(function(){ levelRenderPending = false; renderLevel(); });
+    }
+    function onDown(e){
+      if (!winOverlay.classList.contains('hidden')) return;
+      e.preventDefault();
+      currentStroke = [levelPos(e)];
+      render_();
+    }
+    function onMove(e){
+      if (!currentStroke) return;
+      e.preventDefault();
+      var p = levelPos(e);
+      currentStroke.push(p);
+      updateCoverage([p]);
+      updateProgress();
+      render_();
+      if (coveragePercent() >= 0.94 && winOverlay.classList.contains('hidden')) winLevel();
+    }
+    function onUp(){
+      if (currentStroke && currentStroke.length > 1) userStrokes.push(currentStroke);
+      currentStroke = null;
+      render_();
+    }
+    levelCanvas.addEventListener('pointerdown', onDown);
+    levelCanvas.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    levelCanvas.addEventListener('touchstart', onDown, {passive:false});
+    levelCanvas.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('touchend', onUp);
+
+    var levelWrap = document.getElementById('levelWrap');
+    var cursorGhostLevel = document.getElementById('cursorGhostLevel');
+    levelWrap.classList.add('ghost-cursor');
+    cursorGhostLevel.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 3L6 11"/><path d="M2 11H10"/><path d="M3 11V16M5.3 11V16M7.6 11V16M9.9 11V16"/></svg>';
+    levelWrap.addEventListener('pointermove', function(e){
+      var rect = levelWrap.getBoundingClientRect();
+      cursorGhostLevel.style.transform = 'translate(' + (e.clientX-rect.left-13) + 'px,' + (e.clientY-rect.top-13) + 'px)';
+      cursorGhostLevel.style.opacity = 1;
+    });
+    levelWrap.addEventListener('pointerleave', function(){ cursorGhostLevel.style.opacity = 0; });
+
+    function openLevelPlay(level){
+      subLevelGrid.classList.add('hidden');
+      subCollection.classList.add('hidden');
+      subLevelPlay.classList.remove('hidden');
+      startLevel(level);
+    }
+    function backToGrid(){
+      subLevelPlay.classList.add('hidden');
+      subCollection.classList.add('hidden');
+      subLevelGrid.classList.remove('hidden');
+      renderLevelGrid();
+    }
+
+    document.getElementById('backToGridBtn').addEventListener('click', backToGrid);
+    document.getElementById('retryLevelBtn').addEventListener('click', function(){ startLevel(currentLevel); });
+    document.getElementById('winBackBtn').addEventListener('click', backToGrid);
+    document.getElementById('winNextBtn').addEventListener('click', function(){
+      var next = LEVELS[currentLevel.id];
+      if (next) startLevel(next); else backToGrid();
+    });
+
+    // ---- collection ----
+    var cardGrid = document.getElementById('cardGrid');
+    function renderCollection(){
+      cardGrid.innerHTML = '';
+      LEVELS.forEach(function(lv){
+        var completed = progress.completed.indexOf(lv.id) >= 0;
+        var cell = document.createElement('div');
+        cell.className = 'card-thumb' + (completed ? '' : ' locked') + (completed && lv.rare ? ' card-rare' : '');
+        if (completed){
+          var c = document.createElement('canvas');
+          c.width = 240; c.height = 336;
+          renderCardInto(c, lv);
+          cell.appendChild(c);
+        } else {
+          cell.textContent = '?';
+        }
+        cardGrid.appendChild(cell);
+      });
+    }
+    document.getElementById('openCollectionBtn').addEventListener('click', function(){
+      subLevelGrid.classList.add('hidden');
+      subCollection.classList.remove('hidden');
+      renderCollection();
+    });
+    document.getElementById('closeCollectionBtn').addEventListener('click', function(){
+      subCollection.classList.add('hidden');
+      subLevelGrid.classList.remove('hidden');
+      renderLevelGrid();
+    });
+
+    window.onEnterLevels = function(){ renderLevelGrid(); };
+    window.refreshLevelsLang = function(){
+      renderLevelGrid();
+      if (currentLevel && !subLevelPlay.classList.contains('hidden')){
+        levelPlayTitle.textContent = (LANG === 'es' ? 'Nivel ' : 'Level ') + currentLevel.id + ' · ' + lname(currentLevel);
+      }
+      if (!subCollection.classList.contains('hidden')) renderCollection();
+    };
+    renderLevelGrid();
+  })();
+
+})();
+</script>
