@@ -210,7 +210,7 @@
     .toast { left: 50%; right: auto; transform: translate(-50%,6px); width: 340px; }
     .toast.show { transform: translate(-50%,0); }
 
-    #viewFar {
+    #viewFar:not(.hidden) {
       display: grid;
       grid-template-columns: minmax(0, 640px) 300px;
       grid-template-areas:
