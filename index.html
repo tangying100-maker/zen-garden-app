@@ -62,8 +62,11 @@
   .material-btn.active { border-color: var(--moss); background: var(--paper-raised); color: var(--ink); }
   .material-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0,0,0,0.18); flex-shrink: 0; }
 
-  .amb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: -6px 0 4px; }
-  .amb-btn { font-family: inherit; font-size: 0.78rem; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .amb-strip { display: flex; align-items: center; gap: 6px; padding: 0 16px 12px; }
+  .amb-toggle { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
+  .amb-toggle svg { width: 15px; height: 15px; }
+  .amb-toggle.on { background: var(--water); border-color: var(--water); color: #fff; }
+  .amb-btn { flex: 1; font-family: inherit; font-size: 0.76rem; padding: 7px 4px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
   .amb-btn.active { background: var(--water); border-color: var(--water); color: #fff; }
 
   .canvas-wrap { position: relative; margin: 0 12px; border-radius: 14px; overflow: hidden; }
@@ -75,10 +78,12 @@
   .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; }
   .particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .particle { position: absolute; top: -6%; width: 8px; height: 8px; animation: fall linear infinite; opacity: 0.95; }
-  .particle.petal { background: #F3A9C0; border-radius: 60% 40% 60% 40%; box-shadow: 0 0 3px rgba(243,169,192,0.6); }
-  .particle.leaf { background: #C2661E; border-radius: 2px 10px; box-shadow: 0 0 3px rgba(194,102,30,0.5); }
-  .particle.snow { background: #FFFFFF; border-radius: 50%; box-shadow: 0 0 5px rgba(255,255,255,0.9); }
+  .particle.petal { background: #F3A9C0; border-radius: 60% 40% 60% 40%; box-shadow: 0 0 6px rgba(243,169,192,0.7); }
+  .particle.leaf { background: #C2661E; border-radius: 2px 10px; box-shadow: 0 0 6px rgba(194,102,30,0.6); }
+  .particle.snow { background: #FFFFFF; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.95); }
+  .particle.mote { top: auto; bottom: -6%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF6D8, #FFD873 55%, rgba(255,216,115,0)); box-shadow: 0 0 10px 2px rgba(255,214,110,0.65); animation: rise linear infinite; }
   @keyframes fall { from { transform: translateY(-10%) translateX(0) rotate(0deg); opacity: 0.95; } to { transform: translateY(720%) translateX(var(--drift)) rotate(160deg); opacity: 0.1; } }
+  @keyframes rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 12% { opacity: 0.95; } 50% { opacity: 0.65; transform: translateY(-360%) translateX(calc(var(--drift) * 0.5)); } 88% { opacity: 0.85; } 100% { transform: translateY(-720%) translateX(var(--drift)); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .particle { animation: none; display: none; } }
 
   .season-tint { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0; transition: opacity 0.6s ease, background 0.6s ease; }
@@ -121,16 +126,6 @@
   .tab-btn.active { color: var(--moss); }
 
   .screen.hidden, .view.hidden { display: none; }
-
-  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px; }
-  .shop-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--paper-raised); display: flex; flex-direction: column; gap: 6px; }
-  .shop-swatch { height: 46px; border-radius: 8px; }
-  .shop-name { font-size: 0.86rem; font-weight: 600; }
-  .shop-price { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.72rem; color: var(--water); }
-  .shop-price.locked { color: var(--clay); }
-  .shop-btn { margin-top: 2px; font-family: inherit; font-size: 0.76rem; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
-  .shop-plus-banner { margin: 4px 16px 0; padding: 12px 14px; border-radius: 12px; background: var(--moss); color: var(--paper); font-size: 0.82rem; }
-  .shop-plus-banner strong { display: block; font-family: "Iowan Old Style", "Songti SC", Georgia, serif; font-size: 1rem; margin-bottom: 2px; }
 
   .settings-list { padding: 8px 16px 20px; display: flex; flex-direction: column; gap: 18px; }
   .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -239,7 +234,6 @@
     #subCollection .card-grid { grid-template-columns: repeat(6, 1fr); max-width: 800px; margin: 0 28px; }
     #subLevelPlay { max-width: 640px; margin: 0 auto; padding: 8px 28px 28px; }
 
-    .shop-grid { grid-template-columns: repeat(4, 1fr); max-width: 900px; margin: 0 auto; padding: 14px 28px; }
     .settings-list { max-width: 520px; margin: 0 auto; padding: 8px 28px 28px; }
   }
 </style>
@@ -283,6 +277,15 @@
         <button class="material-btn" data-material="stone" style="--sw:#C9BC98"><span class="material-dot"></span>Grey Grit</button>
         <button class="material-btn" data-material="black" style="--sw:#2A2926"><span class="material-dot"></span>Black Sand</button>
         <button class="material-btn" data-material="clay" style="--sw:#B8703E"><span class="material-dot"></span>Terracotta</button>
+      </div>
+
+      <div class="amb-strip" id="ambStrip">
+        <button class="amb-toggle" id="soundSwitch" aria-label="Toggle ambient sound">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5V14.5H7.5L12.5 18.5V5.5L7.5 9.5H4Z"/><path d="M16 8.5C17.2 9.9 17.2 14.1 16 15.5"/></svg>
+        </button>
+        <button class="amb-btn active" data-amb="rain" id="ambBtnRain">Rain</button>
+        <button class="amb-btn" data-amb="ocean" id="ambBtnOcean">Ocean</button>
+        <button class="amb-btn" data-amb="campfire" id="ambBtnCampfire">Campfire</button>
       </div>
 
       <div class="screen garden-screen" id="screen-garden">
@@ -399,27 +402,13 @@
 
       </div>
 
-      <div class="screen shop-screen hidden" id="screen-shop">
-        <div class="shop-plus-banner" id="shopBanner"><strong>Plus Membership</strong>No ads · All content · Cloud sync · From $3.99/mo</div>
-        <div class="shop-grid" id="shopGrid"></div>
-      </div>
-
       <div class="screen settings-screen hidden" id="screen-settings">
         <div class="settings-list">
           <div class="settings-row">
             <div>
-              <div class="settings-row-label" id="soundLabel">Ambient Sound</div>
-              <div class="settings-row-sub" id="soundSub">Synthesized ambient noise — no external audio files</div>
+              <div class="settings-row-label" id="soundLabel">Ambient Volume</div>
+              <div class="settings-row-sub" id="soundSub">Pick Rain, Ocean or Campfire from the row above the garden</div>
             </div>
-            <button class="switch" id="soundSwitch" aria-label="Toggle ambient sound"></button>
-          </div>
-          <div class="amb-grid" id="ambGrid">
-            <button class="amb-btn active" data-amb="wind">Wind</button>
-            <button class="amb-btn" data-amb="rain">Rain</button>
-            <button class="amb-btn" data-amb="ocean">Ocean</button>
-            <button class="amb-btn" data-amb="stream">Stream</button>
-            <button class="amb-btn" data-amb="campfire">Campfire</button>
-            <button class="amb-btn" data-amb="crickets">Crickets</button>
           </div>
           <div class="settings-row">
             <div class="settings-row-label" id="volumeLabel">Volume</div>
@@ -447,10 +436,6 @@
         <button class="tab-btn active" data-screen="garden" aria-label="Garden">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3C6 3 4 9 4 14C4 18 8 20 12 20C16 20 20 18 20 14C20 9 18 3 12 3Z"/></svg>
           Garden
-        </button>
-        <button class="tab-btn" data-screen="shop" aria-label="Shop">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M6 8H18L17 21H7L6 8Z"/><path d="M9 8V6C9 4 10 3 12 3C14 3 15 4 15 6V8"/></svg>
-          Shop
         </button>
         <button class="tab-btn" data-screen="settings" aria-label="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2V5M12 19V22M2 12H5M19 12H22M4.9 4.9L7 7M17 17L19.1 19.1M19.1 4.9L17 7M7 17L4.9 19.1"/></svg>
@@ -506,20 +491,17 @@
     levelGhostNote: { en:'Rake along the dashed guide — cover enough of it to clear the level. No timer, no penalty.', es:'Rastrilla siguiendo la guía punteada — cubre lo suficiente para superar el nivel. Sin cronómetro, sin penalización.' },
     collectionTitle: { en:'Card Collection', es:'Colección de Cartas' },
     closeCollectionBtn: { en:'← Levels', es:'← Niveles' },
-    tabGarden: { en:'Garden', es:'Jardín' }, tabShop: { en:'Shop', es:'Tienda' }, tabSettings: { en:'Settings', es:'Ajustes' },
-    soundLabel: { en:'Ambient Sound', es:'Sonido Ambiental' },
-    soundSub: { en:'Synthesized wind & water noise — no external audio files', es:'Ruido blanco sintetizado de viento y agua — sin archivos de audio externos' },
+    tabGarden: { en:'Garden', es:'Jardín' }, tabSettings: { en:'Settings', es:'Ajustes' },
+    soundLabel: { en:'Ambient Volume', es:'Volumen Ambiental' },
+    soundSub: { en:'Pick Rain, Ocean or Campfire from the row above the garden', es:'Elige Lluvia, Océano o Fogata en la fila sobre el jardín' },
     volumeLabel: { en:'Volume', es:'Volumen' },
     nightLabel: { en:'Day / Night', es:'Día / Noche' },
     resetLabel: { en:'Reset Garden', es:'Reiniciar Jardín' },
     resetSub: { en:'Clears the canvas back to flat, unraked sand', es:'Limpia el lienzo y vuelve a la arena plana sin rastrillar' },
     resetGardenBtn: { en:'Reset', es:'Reiniciar' },
     aboutNote: { en:"This prototype is for validating the look and feel — it isn't wired to real payments, accounts, or cloud sync yet; that comes with the production app.", es:'Este es un prototipo para validar la dirección visual y la sensación general — aún no está conectado a pagos reales, cuentas o sincronización en la nube; eso llegará con la app de producción.' },
-    shopBanner: { en:'<strong>Plus Membership</strong>No ads · All content · Cloud sync · From $3.99/mo', es:'<strong>Membresía Plus</strong>Sin anuncios · Todo el contenido · Sincronización en la nube · Desde $3.99/mes' },
-    shopUnlock: { en:'Unlock', es:'Desbloquear' }, shopUse: { en:'Use', es:'Usar' },
     resetToast: { en:'Reset to flat, unraked sand', es:'Reiniciado a arena plana sin rastrillar' },
-    ambWind: { en:'Wind', es:'Viento' }, ambRain: { en:'Rain', es:'Lluvia' }, ambOcean: { en:'Ocean', es:'Océano' },
-    ambStream: { en:'Stream', es:'Arroyo' }, ambCampfire: { en:'Campfire', es:'Fogata' }, ambCrickets: { en:'Crickets', es:'Grillos' },
+    ambRain: { en:'Rain', es:'Lluvia' }, ambOcean: { en:'Ocean', es:'Océano' }, ambCampfire: { en:'Campfire', es:'Fogata' },
     recordUnsupported: { en:"This browser can't record locally — the real app will use a native solution", es:'Este navegador no puede grabar localmente — la app real usará una solución nativa' }
   };
   function t(key){ var e = STR[key]; return e ? (e[LANG] || e.en) : key; }
@@ -958,9 +940,9 @@
       ctx.fillStyle = tg; ctx.fill();
 
       var branches = [
-        { fx:-1, fy:-38, tx:-19, ty:-64, r:18 },
-        { fx:0,  fy:-39, tx:5,   ty:-76, r:21 },
-        { fx:1,  fy:-38, tx:17,  ty:-56, r:15 }
+        { fx:-1, fy:-38, tx:-21, ty:-66, r:20 },
+        { fx:0,  fy:-39, tx:5,   ty:-79, r:23 },
+        { fx:1,  fy:-38, tx:19,  ty:-58, r:17 }
       ];
       branches.forEach(function(br){
         ctx.beginPath();
@@ -972,17 +954,53 @@
         ctx.fillStyle = '#6B4C34'; ctx.fill();
       });
       var palette = ['#B8492E', '#C97A3D', '#D99046', '#A83A22'];
+      var fleckLight = ['#F0B15E', '#E88A44'];
+      var fleckDark = ['#7A2E1A', '#5C2213'];
       branches.forEach(function(br, i){
-        var radii = [];
-        for (var k = 0; k < 12; k++) radii.push(br.r*(1+(rnd()-0.5)*0.32));
         ctx.save();
         ctx.translate(br.tx, br.ty);
+
+        // main canopy clump
+        var radii = [];
+        for (var k = 0; k < 12; k++) radii.push(br.r*(1+(rnd()-0.5)*0.32));
         smoothBlobPathOn(ctx, radii, 0.92);
         var cg = ctx.createRadialGradient(-br.r*0.3, -br.r*0.35, br.r*0.15, 0, 0, br.r*1.1);
         cg.addColorStop(0, palette[(i+1) % palette.length]);
         cg.addColorStop(1, '#7A2E1A');
         ctx.fillStyle = cg;
         ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(64,20,10,0.4)';
+        ctx.stroke();
+
+        // secondary smaller clump offset to one side — breaks up the single-sphere
+        // silhouette so it reads as a cluster of foliage instead of one balloon
+        ctx.save();
+        var side = i % 2 === 0 ? -1 : 1;
+        ctx.translate(br.r*0.42*side, -br.r*0.28);
+        var subR = br.r*0.5;
+        var subRadii = [];
+        for (var k2 = 0; k2 < 10; k2++) subRadii.push(subR*(1+(rnd()-0.5)*0.3));
+        smoothBlobPathOn(ctx, subRadii, 0.92);
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.globalAlpha = 0.92;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        // leaf-fleck speckle for texture and volume, brighter near the top-left
+        // (implied light source) and darker toward the lower-right
+        for (var f = 0; f < 18; f++){
+          var fang = rnd()*Math.PI*2, frad = rnd()*br.r*0.88;
+          var fx = Math.cos(fang)*frad, fy = Math.sin(fang)*frad*0.92;
+          ctx.beginPath();
+          ctx.arc(fx, fy, 0.9+rnd()*1.1, 0, Math.PI*2);
+          var lit = (fx - fy) > 0;
+          ctx.fillStyle = lit ? fleckLight[f % 2] : fleckDark[f % 2];
+          ctx.globalAlpha = 0.4 + rnd()*0.25;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
         ctx.restore();
       });
     }
@@ -1000,7 +1018,7 @@
       tg.addColorStop(0, '#332619'); tg.addColorStop(0.5, '#6B5640'); tg.addColorStop(1, '#4A3B2C');
       ctx.fillStyle = tg; ctx.fill();
 
-      var pads = [ {x:-15,y:-32,w:24,h:7}, {x:12,y:-52,w:22,h:7}, {x:-9,y:-72,w:19,h:6}, {x:9,y:-88,w:14,h:5} ];
+      var pads = [ {x:-16,y:-32,w:27,h:8}, {x:13,y:-52,w:25,h:8}, {x:-10,y:-72,w:21,h:7}, {x:10,y:-88,w:16,h:5.5} ];
       pads.forEach(function(p, pi){
         ctx.beginPath();
         ctx.moveTo(p.x > 0 ? -2 : 3, p.y+6);
@@ -1009,6 +1027,13 @@
 
         ctx.save();
         ctx.translate(p.x, p.y);
+
+        // soft contact shadow beneath the pad — sells the "floating cloud" niwaki look
+        ctx.beginPath();
+        ctx.ellipse(1.5, p.h*0.55, p.w*0.82, p.h*0.55, 0, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(18,26,14,0.22)';
+        ctx.fill();
+
         var radii = [];
         for (var i = 0; i < 14; i++){
           var ang = (i/14)*Math.PI*2;
@@ -1017,14 +1042,44 @@
         }
         smoothBlobPathOn(ctx, radii, 1);
         var pg = ctx.createLinearGradient(-p.w, -p.h, p.w, p.h);
-        pg.addColorStop(0, '#5C7C50'); pg.addColorStop(1, '#243620');
+        pg.addColorStop(0, '#628356'); pg.addColorStop(1, '#223420');
         ctx.fillStyle = pg;
         ctx.fill();
-        for (var s = 0; s < 14; s++){
-          var sang = rnd()*Math.PI*2, srad = rnd()*p.w*0.72;
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(16,24,12,0.4)';
+        ctx.stroke();
+
+        // rim highlight, offset toward the implied light source, to give the pad volume
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.translate(-p.w*0.18, -p.h*0.4);
+        var hlRadii = radii.map(function(r){ return r*0.5; });
+        smoothBlobPathOn(ctx, hlRadii, 1);
+        ctx.fillStyle = '#A8C88E';
+        ctx.fill();
+        ctx.restore();
+
+        // needle-cluster ticks around the rim
+        for (var nt = 0; nt < 11; nt++){
+          var tang = (nt/11)*Math.PI*2 + pi*0.7;
+          var tr = p.w*0.8;
+          var tx = Math.cos(tang)*tr, ty = Math.sin(tang)*tr*(p.h/p.w);
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(tang + (rnd()-0.5)*0.4);
+          ctx.beginPath();
+          ctx.moveTo(0, 0); ctx.lineTo(3.2+rnd()*1.4, 0);
+          ctx.strokeStyle = 'rgba(16,24,12,0.42)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+        // surface speckle for texture
+        for (var s = 0; s < 12; s++){
+          var sang = rnd()*Math.PI*2, srad = rnd()*p.w*0.68;
           ctx.beginPath();
           ctx.arc(Math.cos(sang)*srad, Math.sin(sang)*srad*(p.h/p.w), 1, 0, Math.PI*2);
-          ctx.fillStyle = 'rgba(20,30,14,0.3)';
+          ctx.fillStyle = 'rgba(18,28,14,0.3)';
           ctx.fill();
         }
         ctx.restore();
@@ -1203,7 +1258,7 @@
     function ensureInteractionTextures(){
       ensureSharedNoise();
       if (rakeTexture) return;
-      var rf = sfxCtx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 1300; rf.Q.value = 0.7;
+      var rf = sfxCtx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 1300; rf.Q.value = 1.1;
       var rg = sfxCtx.createGain(); rg.gain.value = 0;
       sharedNoiseSrc.connect(rf); rf.connect(rg); rg.connect(sfxCtx.destination);
       rakeTexture = { filter: rf, gain: rg };
@@ -1302,8 +1357,10 @@
       currentRake = null;
       smoothing = false;
       requestRender();
-      if (rakeTexture) rakeTexture.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.18);
-      if (smoothTexture) smoothTexture.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.2);
+      // short release — a slow tail on a filtered-noise texture reads as reverb/mush,
+      // a quick cutoff is what makes it sound like a distinct stroke instead of a smear
+      if (rakeTexture) rakeTexture.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.045);
+      if (smoothTexture) smoothTexture.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.05);
       stopDragHaptic();
     }
     canvas.addEventListener('pointerdown', onDown);
@@ -1410,10 +1467,10 @@
     var currentSeason = 'summer';
 
     var SEASON_TINTS = {
-      spring: 'rgba(255,190,215,0.4)',
-      summer: 'rgba(0,0,0,0)',
-      autumn: 'rgba(255,150,70,0.35)',
-      winter: 'rgba(190,220,255,0.32)'
+      spring: 'rgba(255,175,205,0.5)',
+      summer: 'rgba(255,221,120,0.24)',
+      autumn: 'rgba(255,135,50,0.48)',
+      winter: 'rgba(180,212,255,0.44)'
     };
     function setSeason(season){
       currentSeason = season;
@@ -1423,20 +1480,20 @@
       });
       var tintEl = document.getElementById('seasonTint');
       tintEl.style.background = SEASON_TINTS[season];
-      tintEl.style.opacity = season === 'summer' ? 0 : 1;
+      tintEl.style.opacity = 1;
       particlesWrap.innerHTML = '';
-      if (reduceMotion || season === 'summer') return;
-      var cls = season === 'spring' ? 'petal' : season === 'autumn' ? 'leaf' : 'snow';
-      var count = season === 'winter' ? 26 : 20;
+      if (reduceMotion) return;
+      var cls = season === 'spring' ? 'petal' : season === 'autumn' ? 'leaf' : season === 'winter' ? 'snow' : 'mote';
+      var count = season === 'winter' ? 34 : season === 'summer' ? 24 : 28;
       for (var i = 0; i < count; i++){
         var p = document.createElement('div');
         p.className = 'particle ' + cls;
         p.style.left = (Math.random()*96) + '%';
         p.style.setProperty('--drift', (Math.random()*70 - 35) + 'px');
-        var dur = season === 'winter' ? (8 + Math.random()*7) : (5.5 + Math.random()*5);
+        var dur = season === 'winter' ? (8 + Math.random()*7) : season === 'summer' ? (6 + Math.random()*6) : (5.5 + Math.random()*5);
         p.style.animationDuration = dur + 's';
         p.style.animationDelay = (-Math.random()*dur) + 's';
-        var size = 8 + Math.random()*8;
+        var size = season === 'summer' ? (4 + Math.random()*5) : (13 + Math.random()*11);
         p.style.width = size + 'px'; p.style.height = size + 'px';
         particlesWrap.appendChild(p);
       }
@@ -1446,13 +1503,13 @@
     });
     setSeason('summer');
 
-    // ---- shared UI: tabs, view switch, settings, shop, audio, recording ----
+    // ---- shared UI: tabs, view switch, settings, audio, recording ----
     document.querySelectorAll('.tab-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         var target = btn.getAttribute('data-screen');
-        ['garden','shop','settings'].forEach(function(name){
+        ['garden','settings'].forEach(function(name){
           document.getElementById('screen-' + name).classList.toggle('hidden', name !== target);
         });
       });
@@ -1484,44 +1541,6 @@
       toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
     };
 
-    var shopItems = [
-      { en:'Basic Stone Set', es:'Set de Piedras Básico', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#8A8A80' },
-      { en:'Moss Patch & Mound', es:'Musgo: Parche y Montículo', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#57683F' },
-      { en:'Bamboo (Basic)', es:'Bambú (Básico)', priceEn:'Free', priceEs:'Gratis', locked:false, color:'#5B7A4A' },
-      { en:'Craggy Rock Set', es:'Set de Rocas Escarpadas', priceEn:'$1.99', priceEs:'$1.99', locked:true, color:'#4E4E46' },
-      { en:'Koi Pond Ornament', es:'Adorno de Estanque Koi', priceEn:'$2.99', priceEs:'$2.99', locked:true, color:'#4A6E7A' },
-      { en:'Stone Lantern', es:'Farol de Piedra', priceEn:'$1.99', priceEs:'$1.99', locked:true, color:'#6E6357' },
-      { en:'Maple Bonsai · Autumn', es:'Bonsái de Arce · Otoño', priceEn:'Plus only', priceEs:'Solo Plus', locked:true, color:'#B85C3D' },
-      { en:'First Snow Soundscape', es:'Paisaje Sonoro de Primera Nevada', priceEn:'Plus only', priceEs:'Solo Plus', locked:true, color:'#8FA3AE' }
-    ];
-    var shopGrid = document.getElementById('shopGrid');
-    function renderShop(){
-      shopGrid.innerHTML = '';
-      shopItems.forEach(function(item){
-        var itemName = item[LANG] || item.en;
-        var card = document.createElement('div');
-        card.className = 'shop-card';
-        var swatch = document.createElement('div');
-        swatch.className = 'shop-swatch';
-        swatch.style.background = item.color;
-        var name = document.createElement('div');
-        name.className = 'shop-name'; name.textContent = itemName;
-        var price = document.createElement('div');
-        price.className = 'shop-price' + (item.locked ? ' locked' : ''); price.textContent = LANG === 'es' ? item.priceEs : item.priceEn;
-        var btn = document.createElement('button');
-        btn.className = 'shop-btn';
-        btn.textContent = item.locked ? t('shopUnlock') : t('shopUse');
-        btn.addEventListener('click', function(){
-          showToast(item.locked
-            ? (LANG === 'es' ? ('"' + itemName + '" es parte de Plus o una compra única · aún sin pagos reales en este prototipo') : ('"' + itemName + '" is part of Plus or a one-time purchase · not wired to real payments yet'))
-            : (LANG === 'es' ? ('"' + itemName + '" ya está disponible en tus herramientas de jardín') : ('"' + itemName + '" is already available in your garden tools')));
-        });
-        card.appendChild(swatch); card.appendChild(name); card.appendChild(price); card.appendChild(btn);
-        shopGrid.appendChild(card);
-      });
-    }
-    renderShop();
-
     var nightSwitch = document.getElementById('nightSwitch');
     nightSwitch.addEventListener('click', function(){ isNight = !isNight; applyNight(); });
     applyNight();
@@ -1531,9 +1550,9 @@
       showToast(t('resetToast'));
     });
 
-    // ---- ambient soundscape picker: 6 procedural options sharing the one noise source ----
+    // ---- ambient soundscape picker: Rain / Ocean / Campfire sharing the one noise source ----
     var soundOn = false;
-    var currentAmbience = 'wind';
+    var currentAmbience = 'rain';
     var soundSwitch = document.getElementById('soundSwitch');
     var volumeSlider = document.getElementById('volumeSlider');
     var ambiences = {};
@@ -1545,31 +1564,24 @@
       var gain = sfxCtx.createGain(); gain.gain.value = 0;
       sharedNoiseSrc.connect(filter); filter.connect(gain); gain.connect(sfxCtx.destination);
       var amb = { filter: filter, gain: gain };
-      if (id === 'wind'){
-        filter.type = 'lowpass'; filter.frequency.value = 700;
-        var lfo = sfxCtx.createOscillator(); lfo.frequency.value = 0.08;
-        var lfoGain = sfxCtx.createGain(); lfoGain.gain.value = 250;
-        lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start();
-      } else if (id === 'rain'){
-        filter.type = 'highpass'; filter.frequency.value = 2600; filter.Q.value = 0.4;
-        var lfo2 = sfxCtx.createOscillator(); lfo2.frequency.value = 3.2;
-        var lfoGain2 = sfxCtx.createGain(); lfoGain2.gain.value = 500;
-        lfo2.connect(lfoGain2); lfoGain2.connect(filter.frequency); lfo2.start();
+      if (id === 'rain'){
+        // soft mid-band wash for the base "shhh" — the actual droplet character comes
+        // from scheduleDroplet's high transients layered on top, not from this filter alone
+        filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.55;
+        var lfo2 = sfxCtx.createOscillator(); lfo2.frequency.value = 0.2;
+        var lfoGain2 = sfxCtx.createGain(); lfoGain2.gain.value = 0.025;
+        lfo2.connect(lfoGain2); lfoGain2.connect(gain.gain); lfo2.start();
       } else if (id === 'ocean'){
-        filter.type = 'lowpass'; filter.frequency.value = 450; filter.Q.value = 0.3;
-        var lfo3 = sfxCtx.createOscillator(); lfo3.frequency.value = 0.12;
-        var lfoGain3 = sfxCtx.createGain(); lfoGain3.gain.value = 0; // scaled to volume when selected
-        lfo3.connect(lfoGain3); lfoGain3.connect(gain.gain); lfo3.start();
+        filter.type = 'lowpass'; filter.frequency.value = 480; filter.Q.value = 0.35;
+        var lfo3 = sfxCtx.createOscillator(); lfo3.frequency.value = 0.11;
+        var lfoGain3 = sfxCtx.createGain(); lfoGain3.gain.value = 0; // amplitude swell, scaled to volume when selected
+        var lfoFreqGain3 = sfxCtx.createGain(); lfoFreqGain3.gain.value = 140; // brighten as each wave crests
+        lfo3.connect(lfoGain3); lfoGain3.connect(gain.gain);
+        lfo3.connect(lfoFreqGain3); lfoFreqGain3.connect(filter.frequency);
+        lfo3.start();
         amb.swellLfoGain = lfoGain3;
-      } else if (id === 'stream'){
-        filter.type = 'bandpass'; filter.frequency.value = 1800; filter.Q.value = 0.7;
-        var lfo4 = sfxCtx.createOscillator(); lfo4.frequency.value = 0.9;
-        var lfoGain4 = sfxCtx.createGain(); lfoGain4.gain.value = 700;
-        lfo4.connect(lfoGain4); lfoGain4.connect(filter.frequency); lfo4.start();
       } else if (id === 'campfire'){
-        filter.type = 'lowpass'; filter.frequency.value = 220; filter.Q.value = 0.5;
-      } else if (id === 'crickets'){
-        filter.type = 'bandpass'; filter.frequency.value = 3800; filter.Q.value = 6;
+        filter.type = 'lowpass'; filter.frequency.value = 200; filter.Q.value = 0.5;
       }
       ambiences[id] = amb;
       return amb;
@@ -1581,41 +1593,48 @@
       noiseBurst(0.03+Math.random()*0.03, 3, 'highpass', 1800, 1600, 0.6, 0.1+Math.random()*0.1);
       setTimeout(scheduleCrackle, 250+Math.random()*700);
     }
-    function scheduleChirp(){
-      if (currentAmbience !== 'crickets' || !soundOn) return;
-      noiseBurst(0.05, 1.5, 'bandpass', 4000, 400, 8, 0.09);
-      setTimeout(function(){
-        if (currentAmbience !== 'crickets' || !soundOn) return;
-        noiseBurst(0.05, 1.5, 'bandpass', 4000, 400, 8, 0.08);
-      }, 90);
-      setTimeout(scheduleChirp, 1800+Math.random()*2500);
+    function scheduleDroplet(){
+      if (currentAmbience !== 'rain' || !soundOn) return;
+      noiseBurst(0.02+Math.random()*0.015, 1.4, 'highpass', 3400+Math.random()*1600, 900, 2.5, 0.045+Math.random()*0.035);
+      setTimeout(scheduleDroplet, 35+Math.random()*85);
+    }
+
+    // hard-stop any ambience that isn't the one just selected: the previous version only
+    // faded the old one out over a slow setTargetAtTime (settle ~2.5s), so switching left
+    // the old and new soundscapes audibly overlapping — this snaps the fade much shorter
+    function silenceAmbience(id){
+      var amb = ambiences[id];
+      if (!amb) return;
+      amb.gain.gain.cancelScheduledValues(sfxCtx.currentTime);
+      amb.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.06);
     }
 
     function setAmbience(id, skipFade){
-      var prev = currentAmbience;
       currentAmbience = id;
       document.querySelectorAll('.amb-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-amb') === id); });
       if (!soundOn) return;
-      if (ambiences[prev] && prev !== id) ambiences[prev].gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.5);
+      Object.keys(ambiences).forEach(function(otherId){ if (otherId !== id) silenceAmbience(otherId); });
       var amb = buildAmbience(id);
       var vol = currentVolume();
-      amb.gain.gain.setTargetAtTime(vol, sfxCtx.currentTime, skipFade ? 0.05 : 0.6);
+      amb.gain.gain.cancelScheduledValues(sfxCtx.currentTime);
+      amb.gain.gain.setTargetAtTime(vol, sfxCtx.currentTime, skipFade ? 0.05 : 0.3);
       if (amb.swellLfoGain) amb.swellLfoGain.gain.value = vol*0.7;
       if (id === 'campfire') scheduleCrackle();
-      if (id === 'crickets') scheduleChirp();
+      if (id === 'rain') scheduleDroplet();
     }
 
     soundSwitch.addEventListener('click', function(){
       soundOn = !soundOn;
       soundSwitch.classList.toggle('on', soundOn);
       if (soundOn) setAmbience(currentAmbience, true);
-      else Object.keys(ambiences).forEach(function(id){ ambiences[id].gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.4); });
+      else Object.keys(ambiences).forEach(function(id){ silenceAmbience(id); });
     });
     volumeSlider.addEventListener('input', function(){
       if (!soundOn) return;
       var amb = ambiences[currentAmbience];
       if (!amb) return;
       var vol = currentVolume();
+      amb.gain.gain.cancelScheduledValues(sfxCtx.currentTime);
       amb.gain.gain.setTargetAtTime(vol, sfxCtx.currentTime, 0.1);
       if (amb.swellLfoGain) amb.swellLfoGain.gain.value = vol*0.7;
     });
@@ -1711,7 +1730,6 @@
       document.getElementById('collectionTitle').textContent = t('collectionTitle');
       document.getElementById('closeCollectionBtn').textContent = t('closeCollectionBtn');
       setBtnText(document.querySelector('.tab-btn[data-screen="garden"]'), t('tabGarden'));
-      setBtnText(document.querySelector('.tab-btn[data-screen="shop"]'), t('tabShop'));
       setBtnText(document.querySelector('.tab-btn[data-screen="settings"]'), t('tabSettings'));
       document.getElementById('soundLabel').textContent = t('soundLabel');
       document.getElementById('soundSub').textContent = t('soundSub');
@@ -1721,15 +1739,10 @@
       document.getElementById('resetSub').textContent = t('resetSub');
       document.getElementById('resetGardenBtn').textContent = t('resetGardenBtn');
       document.getElementById('aboutNote').textContent = t('aboutNote');
-      document.getElementById('shopBanner').innerHTML = t('shopBanner');
-      document.querySelector('.amb-btn[data-amb="wind"]').textContent = t('ambWind');
-      document.querySelector('.amb-btn[data-amb="rain"]').textContent = t('ambRain');
-      document.querySelector('.amb-btn[data-amb="ocean"]').textContent = t('ambOcean');
-      document.querySelector('.amb-btn[data-amb="stream"]').textContent = t('ambStream');
-      document.querySelector('.amb-btn[data-amb="campfire"]').textContent = t('ambCampfire');
-      document.querySelector('.amb-btn[data-amb="crickets"]').textContent = t('ambCrickets');
+      document.getElementById('ambBtnRain').textContent = t('ambRain');
+      document.getElementById('ambBtnOcean').textContent = t('ambOcean');
+      document.getElementById('ambBtnCampfire').textContent = t('ambCampfire');
       renderVariantRow();
-      renderShop();
       setSeason(currentSeason);
       if (typeof window.refreshLevelsLang === 'function') window.refreshLevelsLang();
     }
