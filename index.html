@@ -191,6 +191,23 @@
     .stage-title { display: none; }
     .phone { width: 100%; max-width: 100%; border-radius: 0; padding: 0; border: none; box-shadow: none; background: var(--paper); }
     .phone-inner { border-radius: 0; min-height: 100dvh; }
+
+    /* on a real phone, view-strip + season-strip + material-strip + amb-strip stacked at
+       their desktop-mockup sizing ate ~40% of the viewport height before the canvas even
+       started — tighten padding/sizing on just these control rows to give the actual
+       garden more room without hiding or removing anything */
+    .app-header { padding: 10px 16px 6px; }
+    .app-title h2 { font-size: 1.05rem; }
+    .icon-btn { width: 30px; height: 30px; }
+    .view-strip { padding: 0 16px 6px; }
+    .view-btn { padding: 6px 0; font-size: 0.76rem; }
+    .season-strip { padding: 0 16px 6px; }
+    .season-btn { padding: 5px 0; font-size: 0.72rem; }
+    .material-strip { padding: 0 16px 8px; gap: 4px; }
+    .material-btn { padding: 5px 2px; font-size: 0.64rem; gap: 4px; }
+    .amb-strip { padding: 0 16px 8px; gap: 4px; }
+    .amb-toggle { width: 28px; height: 28px; }
+    .amb-btn { padding: 6px 2px; font-size: 0.7rem; }
   }
 
   /* real web layout above phone width: no more phone-mockup chrome, canvas gets a proper
@@ -1204,6 +1221,14 @@
       // sfxCtx.destination, so the clip recorder can tap the exact same mix the user hears
       if (!sfxOut){ sfxOut = sfxCtx.createGain(); sfxOut.gain.value = 1; sfxOut.connect(sfxCtx.destination); }
     }
+    // mobile Safari in particular doesn't reliably unlock a fresh AudioContext on the first
+    // touchstart of a canvas drag (rake) the way it does on a full button click — this fires
+    // in the capture phase, before the canvas's own handlers, on the very first touch/pointer
+    // interaction anywhere on the page, so the context is already resuming by the time any
+    // tool tries to play through it. Without this, rake/smooth stayed silent until the user
+    // happened to tap a real button (like the ambience toggle) first.
+    window.addEventListener('pointerdown', ensureSfx, { capture: true, once: true });
+    window.addEventListener('touchstart', ensureSfx, { capture: true, once: true });
     function ensureSharedNoise(){
       ensureSfx();
       if (sharedNoiseSrc) return;
@@ -2243,11 +2268,25 @@
       if (!currentStroke) return;
       e.preventDefault();
       var p = levelPos(e);
+      var prev = currentStroke[currentStroke.length-1];
       currentStroke.push(p);
-      updateCoverage([p]);
+      // interpolate between the last two points before checking coverage — touch devices
+      // fire pointermove far less often than a mouse during a fast swipe, so without this
+      // a quick finger stroke can visually pass right over a guide sample and never mark
+      // it covered, making levels feel impossible even when traced correctly
+      var samples = [p];
+      if (prev){
+        var dist = Math.hypot(p.x-prev.x, p.y-prev.y);
+        var steps = Math.floor(dist/4);
+        for (var i = 1; i < steps; i++){
+          var t = i/steps;
+          samples.push({ x: prev.x+(p.x-prev.x)*t, y: prev.y+(p.y-prev.y)*t });
+        }
+      }
+      updateCoverage(samples);
       updateProgress();
       render_();
-      if (coveragePercent() >= 0.94 && winOverlay.classList.contains('hidden')) winLevel();
+      if (coveragePercent() >= 0.88 && winOverlay.classList.contains('hidden')) winLevel();
     }
     function onUp(){
       if (currentStroke && currentStroke.length > 1) userStrokes.push(currentStroke);
