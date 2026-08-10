@@ -81,9 +81,8 @@
   .particle.petal { background: #F3A9C0; border-radius: 60% 40% 60% 40%; box-shadow: 0 0 6px rgba(243,169,192,0.7); }
   .particle.leaf { background: #C2661E; border-radius: 2px 10px; box-shadow: 0 0 6px rgba(194,102,30,0.6); }
   .particle.snow { background: #FFFFFF; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.95); }
-  .particle.mote { top: auto; bottom: -6%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFEF2, #E8FF6A 50%, rgba(232,255,106,0)); box-shadow: 0 0 18px 5px rgba(226,255,110,0.9); animation: rise linear infinite; }
+  .particle.mote { border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFEF2, #E8FF6A 50%, rgba(232,255,106,0)); box-shadow: 0 0 18px 5px rgba(226,255,110,0.9); }
   @keyframes fall { from { transform: translateY(-10%) translateX(0) rotate(0deg); opacity: 0.95; } to { transform: translateY(720%) translateX(var(--drift)) rotate(160deg); opacity: 0.1; } }
-  @keyframes rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 12% { opacity: 1; } 50% { opacity: 0.85; transform: translateY(-360%) translateX(calc(var(--drift) * 0.5)); } 88% { opacity: 0.95; } 100% { transform: translateY(-720%) translateX(var(--drift)); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .particle { animation: none; display: none; } }
 
   .season-tint { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0; transition: opacity 0.6s ease, background 0.6s ease; }
@@ -345,7 +344,7 @@
           <div class="record-status hidden" id="recordStatus"><span class="rec-dot"></span>Recording… keep raking for a better clip</div>
 
           <div class="clip-result hidden" id="clipResult">
-            <video id="clipVideo" muted loop playsinline controls></video>
+            <video id="clipVideo" loop playsinline controls></video>
             <div class="clip-actions">
               <a class="reset-btn" id="clipDownload" download="zen-garden-clip.webm">Download clip</a>
               <button class="reset-btn" id="clipCloseBtn">Close</button>
@@ -483,7 +482,8 @@
     toolRake: { en:'Rake', es:'Rastrillo' }, toolRock: { en:'Rock', es:'Roca' }, toolMoss: { en:'Moss', es:'Musgo' },
     toolPlant: { en:'Plant', es:'Planta' }, toolOrnament: { en:'Décor', es:'Decoración' }, toolSmooth: { en:'Smooth', es:'Alisar' },
     actionUndo: { en:'Undo', es:'Deshacer' }, actionClear: { en:'Clear', es:'Limpiar' }, actionRecord: { en:'Record', es:'Grabar' },
-    recordStatus: { en:'Recording… keep raking for a better clip', es:'Grabando… sigue rastrillando para un mejor clip' },
+    actionStopRecord: { en:'Stop', es:'Detener' },
+    recordStatus: { en:'Recording… tap Stop when you\'re done', es:'Grabando… toca Detener cuando termines' },
     clipDownload: { en:'Download clip', es:'Descargar clip' }, clipCloseBtn: { en:'Close', es:'Cerrar' },
     farGhostNote: { en:'This clip only exists in your browser until you tap Download.', es:'Este clip solo existe en tu navegador hasta que toques Descargar.' },
     levelsGridTitle: { en:'Rake Pattern Challenges · 50 Scenes', es:'Desafíos de Patrones · 50 Escenas' },
@@ -1196,10 +1196,13 @@
     // ---- audio: one shared context + one shared noise buffer feeds everything ----
     // (interaction textures, placement bursts, and the ambient soundscape picker all tap
     // off the same underlying noise so there's only ever one real audio source running)
-    var sfxCtx = null, sharedNoiseSrc = null;
+    var sfxCtx = null, sharedNoiseSrc = null, sfxOut = null;
     function ensureSfx(){
       if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (sfxCtx.state === 'suspended') sfxCtx.resume();
+      // everything routes through this single output node instead of straight to
+      // sfxCtx.destination, so the clip recorder can tap the exact same mix the user hears
+      if (!sfxOut){ sfxOut = sfxCtx.createGain(); sfxOut.gain.value = 1; sfxOut.connect(sfxCtx.destination); }
     }
     function ensureSharedNoise(){
       ensureSfx();
@@ -1230,7 +1233,7 @@
       var filter = sfxCtx.createBiquadFilter();
       filter.type = filterType; filter.frequency.value = freq + Math.random()*freqSpread; filter.Q.value = q;
       var gain = sfxCtx.createGain(); gain.gain.value = level * (0.75+Math.random()*0.25);
-      src.connect(filter); filter.connect(gain); gain.connect(sfxCtx.destination);
+      src.connect(filter); filter.connect(gain); gain.connect(sfxOut);
       src.start();
     }
     function playThunk(){ noiseBurst(0.11, 2.0, 'lowpass', 320, 140, 0.8, 0.55); }
@@ -1245,12 +1248,12 @@
       if (rakeTexture) return;
       var rf = sfxCtx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 1300; rf.Q.value = 1.1;
       var rg = sfxCtx.createGain(); rg.gain.value = 0;
-      sharedNoiseSrc.connect(rf); rf.connect(rg); rg.connect(sfxCtx.destination);
+      sharedNoiseSrc.connect(rf); rf.connect(rg); rg.connect(sfxOut);
       rakeTexture = { filter: rf, gain: rg };
 
       var sf = sfxCtx.createBiquadFilter(); sf.type = 'lowpass'; sf.frequency.value = 600; sf.Q.value = 0.6;
       var sg = sfxCtx.createGain(); sg.gain.value = 0;
-      sharedNoiseSrc.connect(sf); sf.connect(sg); sg.connect(sfxCtx.destination);
+      sharedNoiseSrc.connect(sf); sf.connect(sg); sg.connect(sfxOut);
       smoothTexture = { filter: sf, gain: sg };
     }
     var hapticTimer = null;
@@ -1555,19 +1558,23 @@
       ensureSharedNoise();
       var filter = sfxCtx.createBiquadFilter();
       var gain = sfxCtx.createGain(); gain.gain.value = 0;
-      sharedNoiseSrc.connect(filter); filter.connect(gain); gain.connect(sfxCtx.destination);
-      var amb = { filter: filter, gain: gain };
+      // muteGain is a second, separate gain stage with NOTHING else ever connected into it —
+      // every LFO (swell, wobble) feeds into `gain` instead. A gain node with an oscillator
+      // permanently connected to it can never truly reach silence: ramping its intrinsic
+      // value to 0 doesn't stop the oscillator's own signal from still adding a ripple on
+      // top, so muting always left an audible residual "wind" no matter what. muteGain has
+      // no such passenger, so ramping IT to 0 is the only place true silence is guaranteed.
+      var muteGain = sfxCtx.createGain(); muteGain.gain.value = 0;
+      sharedNoiseSrc.connect(filter); filter.connect(gain); gain.connect(muteGain); muteGain.connect(sfxOut);
+      var amb = { filter: filter, gain: gain, muteGain: muteGain };
       if (id === 'rain'){
-        // the base wash is trimmed to a faint backdrop (not the main event) — the
-        // "滴滴答答" drizzle character comes from scheduleDroplet's individual ticks,
-        // which need clear space around them to read as separate drops instead of hiss
-        filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.55;
-        var washTrim = sfxCtx.createGain(); washTrim.gain.value = 0.32;
+        // a swelling/fading amplitude wobble is exactly what reads as gusting wind, so rain's
+        // backdrop stays flat with no LFO at all — a quiet, narrow, high hiss well below the
+        // droplet ticks, which is what actually carries the "light rain" character
+        filter.type = 'bandpass'; filter.frequency.value = 2200; filter.Q.value = 1.3;
+        var washTrim = sfxCtx.createGain(); washTrim.gain.value = 0.16;
         filter.disconnect(gain);
         filter.connect(washTrim); washTrim.connect(gain);
-        var lfo2 = sfxCtx.createOscillator(); lfo2.frequency.value = 0.2;
-        var lfoGain2 = sfxCtx.createGain(); lfoGain2.gain.value = 0.015;
-        lfo2.connect(lfoGain2); lfoGain2.connect(gain.gain); lfo2.start();
       } else if (id === 'ocean'){
         filter.type = 'lowpass'; filter.frequency.value = 480; filter.Q.value = 0.35;
         var lfo3 = sfxCtx.createOscillator(); lfo3.frequency.value = 0.11;
@@ -1594,9 +1601,9 @@
       if (currentAmbience !== 'rain' || !soundOn) return;
       var vol = currentVolume();
       // a higher Q gives each drop a small resonant "tick" pitch instead of a broadband
-      // click, and the wider, sparser spacing (vs. the old 35-85ms) leaves gaps between
-      // drops so it reads as light drizzle rather than continuous static
-      noiseBurst(0.015+Math.random()*0.01, 2.2, 'bandpass', 2600+Math.random()*2400, 700, 5+Math.random()*3, (0.55+Math.random()*0.4)*vol);
+      // click, and the sparse spacing leaves gaps between drops so it reads as light
+      // drizzle rather than continuous static
+      noiseBurst(0.015+Math.random()*0.01, 2.2, 'bandpass', 2600+Math.random()*2400, 700, 5+Math.random()*3, (0.65+Math.random()*0.45)*vol);
       if (Math.random() < 0.22){
         // an occasional close double-tap — the little "splash" echo a drop makes on a leaf
         setTimeout(function(){
@@ -1604,23 +1611,18 @@
           noiseBurst(0.012, 2.4, 'bandpass', 2200+Math.random()*2000, 600, 5, (0.3+Math.random()*0.2)*vol);
         }, 35+Math.random()*30);
       }
-      setTimeout(scheduleDroplet, 110+Math.random()*260);
+      setTimeout(scheduleDroplet, 90+Math.random()*260);
     }
 
-    // hard-stop any ambience that isn't the one just selected: the previous version only
-    // faded the old one out over a slow setTargetAtTime (settle ~2.5s), so switching left
-    // the old and new soundscapes audibly overlapping — this snaps the fade much shorter
+    // hard-stop any ambience that isn't the one just selected — ramps muteGain (never the
+    // LFO-bearing `gain`) so this always reaches true, leak-free silence
     function silenceAmbience(id){
       var amb = ambiences[id];
       if (!amb) return;
-      // linearRampToValueAtTime reaches an exact 0, unlike setTargetAtTime's asymptotic
-      // decay (which never truly hits 0) — with several LFO-modulated ambiences that
-      // could each be left at a tiny non-zero gain forever, their residual tails summed
-      // into an audible, un-mutable low whoosh
       var now = sfxCtx.currentTime;
-      amb.gain.gain.cancelScheduledValues(now);
-      amb.gain.gain.setValueAtTime(amb.gain.gain.value, now);
-      amb.gain.gain.linearRampToValueAtTime(0, now + 0.08);
+      amb.muteGain.gain.cancelScheduledValues(now);
+      amb.muteGain.gain.setValueAtTime(amb.muteGain.gain.value, now);
+      amb.muteGain.gain.linearRampToValueAtTime(0, now + 0.08);
     }
 
     function setAmbience(id, skipFade){
@@ -1631,7 +1633,11 @@
       var amb = buildAmbience(id);
       var vol = currentVolume();
       amb.gain.gain.cancelScheduledValues(sfxCtx.currentTime);
-      amb.gain.gain.setTargetAtTime(vol, sfxCtx.currentTime, skipFade ? 0.05 : 0.3);
+      amb.gain.gain.setTargetAtTime(vol, sfxCtx.currentTime, 0.05);
+      var now = sfxCtx.currentTime;
+      amb.muteGain.gain.cancelScheduledValues(now);
+      amb.muteGain.gain.setValueAtTime(amb.muteGain.gain.value, now);
+      amb.muteGain.gain.linearRampToValueAtTime(1, now + (skipFade ? 0.05 : 0.3));
       if (amb.swellLfoGain) amb.swellLfoGain.gain.value = vol*0.7;
       if (id === 'campfire') scheduleCrackle();
       if (id === 'rain') scheduleDroplet();
@@ -1665,25 +1671,40 @@
       return '';
     }
     window.setupRecorder = function(cfg){
-      var recording = false;
+      var recorder = null;
+      var maxTimer = null;
       cfg.btn.addEventListener('click', function(){
-        if (recording) return;
+        // toggle: first click starts, second click (on the same button) stops and saves —
+        // previously this only ever started and force-stopped itself after a fixed 4s, so
+        // clicking again mid-recording did nothing and it looked like it "just stopped"
+        if (recorder && recorder.state === 'recording'){
+          recorder.stop();
+          return;
+        }
         if (!window.MediaRecorder || !cfg.canvas.captureStream){
           showToast(t('recordUnsupported'));
           return;
         }
-        recording = true;
+        ensureSfx();
+        // route a copy of the exact live audio mix (ambience + rake/smooth textures +
+        // placement sounds) into the recording — captureStream() alone only grabs video
+        var recordDest = sfxCtx.createMediaStreamDestination();
+        sfxOut.connect(recordDest);
+        var videoStream = cfg.canvas.captureStream(30);
+        var combined = new MediaStream(videoStream.getVideoTracks().concat(recordDest.stream.getAudioTracks()));
+        var mime = pickMime();
+        recorder = mime ? new MediaRecorder(combined, { mimeType: mime }) : new MediaRecorder(combined);
         cfg.btn.classList.add('recording');
+        setBtnText(cfg.btn, t('actionStopRecord'));
         cfg.status.classList.remove('hidden');
         cfg.result.classList.add('hidden');
-        var stream = cfg.canvas.captureStream(30);
-        var mime = pickMime();
-        var recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
         var chunks = [];
         recorder.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
         recorder.onstop = function(){
-          recording = false;
+          clearTimeout(maxTimer);
+          sfxOut.disconnect(recordDest);
           cfg.btn.classList.remove('recording');
+          setBtnText(cfg.btn, t('actionRecord'));
           cfg.status.classList.add('hidden');
           var blob = new Blob(chunks, { type: mime || 'video/webm' });
           var url = URL.createObjectURL(blob);
@@ -1693,7 +1714,9 @@
           cfg.video.play().catch(function(){});
         };
         recorder.start();
-        setTimeout(function(){ if (recorder.state !== 'inactive') recorder.stop(); }, 4000);
+        // safety cap only, not the primary stop mechanism — a stray tab can otherwise
+        // record forever and balloon memory if the user never comes back to stop it
+        maxTimer = setTimeout(function(){ if (recorder.state !== 'inactive') recorder.stop(); }, 90000);
       });
       cfg.closeBtn.addEventListener('click', function(){ cfg.result.classList.add('hidden'); });
     };
