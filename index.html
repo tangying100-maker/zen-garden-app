@@ -352,6 +352,7 @@
           <div class="clip-result hidden" id="clipResult">
             <video id="clipVideo" loop playsinline controls></video>
             <div class="clip-actions">
+              <button class="reset-btn hidden" id="clipShareBtn">Save / Share</button>
               <a class="reset-btn" id="clipDownload" download="zen-garden-clip.webm">Download clip</a>
               <button class="reset-btn" id="clipCloseBtn">Close</button>
             </div>
@@ -489,6 +490,7 @@
     actionStopRecord: { en:'Stop', es:'Detener' },
     recordStatus: { en:'Recording… tap Stop when you\'re done', es:'Grabando… toca Detener cuando termines' },
     clipDownload: { en:'Download clip', es:'Descargar clip' }, clipCloseBtn: { en:'Close', es:'Cerrar' },
+    clipShareBtn: { en:'Save / Share', es:'Guardar / Compartir' },
     farGhostNote: { en:'This clip only exists in your browser until you tap Download.', es:'Este clip solo existe en tu navegador hasta que toques Descargar.' },
     levelsGridTitle: { en:'Rake Pattern Challenges · 50 Scenes', es:'Desafíos de Patrones · 50 Escenas' },
     openCollectionBtn: { en:'Cards', es:'Cartas' },
@@ -1689,12 +1691,18 @@
 
     // ---- shared recorder factory ----
     function pickMime(){
-      var types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      // mobile Safari's MediaRecorder doesn't support webm/vp8/vp9 at all — without an
+      // mp4 candidate here, isTypeSupported() fails every entry and pickMime() falls
+      // back to '', so the recording still worked but got mislabeled as "video/webm"
+      // with a .webm filename regardless of what Safari actually encoded, which is a
+      // big part of why saved clips wouldn't play/import cleanly on iPhone
+      var types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'];
       for (var i = 0; i < types.length; i++){
         if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) return types[i];
       }
       return '';
     }
+    function extFor(mime){ return /mp4/.test(mime) ? 'mp4' : 'webm'; }
     window.setupRecorder = function(cfg){
       var recorder = null;
       var maxTimer = null;
@@ -1710,6 +1718,7 @@
           showToast(t('recordUnsupported'));
           return;
         }
+        cfg.video.pause();
         ensureSfx();
         // route a copy of the exact live audio mix (ambience + rake/smooth textures +
         // placement sounds) into the recording — captureStream() alone only grabs video
@@ -1731,25 +1740,49 @@
           cfg.btn.classList.remove('recording');
           setBtnText(cfg.btn, t('actionRecord'));
           cfg.status.classList.add('hidden');
-          var blob = new Blob(chunks, { type: mime || 'video/webm' });
+          var blobType = mime || 'video/webm';
+          var ext = extFor(blobType);
+          var filename = 'zen-garden-clip.' + ext;
+          var blob = new Blob(chunks, { type: blobType });
           var url = URL.createObjectURL(blob);
           cfg.video.src = url;
           cfg.download.href = url;
+          cfg.download.setAttribute('download', filename);
           cfg.result.classList.remove('hidden');
           cfg.video.play().catch(function(){});
+          // a plain <a download> on iOS just opens the file in a new tab or Files, not
+          // Photos — the Web Share sheet is what actually offers "Save Video" (Camera
+          // Roll) and, if installed, TikTok itself as a direct share target
+          var file;
+          try { file = new File([blob], filename, { type: blobType }); } catch(e){ file = null; }
+          if (file && navigator.canShare && navigator.canShare({ files: [file] })){
+            cfg.shareBtn.classList.remove('hidden');
+            cfg.shareBtn.onclick = function(){
+              navigator.share({ files: [file], title: 'Zen Garden clip' }).catch(function(){});
+            };
+          } else {
+            cfg.shareBtn.classList.add('hidden');
+          }
         };
         recorder.start();
         // safety cap only, not the primary stop mechanism — a stray tab can otherwise
         // record forever and balloon memory if the user never comes back to stop it
         maxTimer = setTimeout(function(){ if (recorder.state !== 'inactive') recorder.stop(); }, 90000);
       });
-      cfg.closeBtn.addEventListener('click', function(){ cfg.result.classList.add('hidden'); });
+      cfg.closeBtn.addEventListener('click', function(){
+        // display:none on the wrapper hides the <video> but does NOT pause it — a hidden,
+        // looping, unmuted video keeps playing its audio indefinitely in the background,
+        // which is why the recording's sound never stopped after tapping Close
+        cfg.video.pause();
+        cfg.result.classList.add('hidden');
+      });
     };
 
     setupRecorder({
       canvas: canvas, btn: document.getElementById('recordBtn'), status: document.getElementById('recordStatus'),
       result: document.getElementById('clipResult'), video: document.getElementById('clipVideo'),
-      download: document.getElementById('clipDownload'), closeBtn: document.getElementById('clipCloseBtn')
+      download: document.getElementById('clipDownload'), closeBtn: document.getElementById('clipCloseBtn'),
+      shareBtn: document.getElementById('clipShareBtn')
     });
 
     // ---- language toggle: swaps every static string + re-renders the language-dependent bits ----
@@ -1777,6 +1810,7 @@
       setBtnText(document.getElementById('recordStatus'), t('recordStatus'));
       document.getElementById('clipDownload').textContent = t('clipDownload');
       document.getElementById('clipCloseBtn').textContent = t('clipCloseBtn');
+      document.getElementById('clipShareBtn').textContent = t('clipShareBtn');
       document.getElementById('farGhostNote').textContent = t('farGhostNote');
       document.getElementById('levelsGridTitle').textContent = t('levelsGridTitle');
       document.getElementById('openCollectionBtn').textContent = t('openCollectionBtn');
