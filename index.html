@@ -49,7 +49,7 @@
   .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .icon-btn svg { width: 17px; height: 17px; }
   .icon-btn:hover { color: var(--ink); }
-  .icon-btn:focus-visible, .tool-btn:focus-visible, .tab-btn:focus-visible, .swatch-btn:focus-visible, .action-btn:focus-visible, .material-btn:focus-visible, .season-btn:focus-visible, .view-btn:focus-visible { outline: 2px solid var(--water); outline-offset: 2px; }
+  .icon-btn:focus-visible, .tool-btn:focus-visible, .tab-btn:focus-visible, .swatch-btn:focus-visible, .action-btn:focus-visible, .season-btn:focus-visible, .view-btn:focus-visible { outline: 2px solid var(--water); outline-offset: 2px; }
 
   .view-strip { display: flex; gap: 6px; padding: 0 16px 10px; }
   .view-btn { flex: 1; font-family: inherit; font-size: 0.82rem; padding: 8px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
@@ -58,11 +58,6 @@
   .season-strip { display: flex; gap: 6px; padding: 0 16px 8px; }
   .season-btn { flex: 1; font-family: inherit; font-size: 0.78rem; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
   .season-btn.active { background: var(--moss); border-color: var(--moss); color: var(--paper); }
-
-  .material-strip { display: flex; gap: 6px; padding: 0 16px 12px; }
-  .material-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 0.72rem; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
-  .material-btn.active { border-color: var(--moss); background: var(--paper-raised); color: var(--ink); }
-  .material-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0,0,0,0.18); flex-shrink: 0; }
 
   .amb-strip { display: flex; align-items: center; gap: 6px; padding: 0 16px 12px; }
   .amb-toggle { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
@@ -194,10 +189,10 @@
     .phone { width: 100%; max-width: 100%; border-radius: 0; padding: 0; border: none; box-shadow: none; background: var(--paper); }
     .phone-inner { border-radius: 0; min-height: 100dvh; }
 
-    /* on a real phone, view-strip + season-strip + material-strip + amb-strip stacked at
-       their desktop-mockup sizing ate ~40% of the viewport height before the canvas even
-       started — tighten padding/sizing on just these control rows to give the actual
-       garden more room without hiding or removing anything */
+    /* on a real phone, view-strip + season-strip + amb-strip stacked at their desktop-mockup
+       sizing ate a lot of the viewport height before the canvas even started — tighten
+       padding/sizing on just these control rows to give the actual garden more room
+       without hiding or removing anything */
     .app-header { padding: 10px 16px 6px; }
     .app-title h2 { font-size: 1.05rem; }
     .icon-btn { width: 30px; height: 30px; }
@@ -205,8 +200,6 @@
     .view-btn { padding: 6px 0; font-size: 0.76rem; }
     .season-strip { padding: 0 16px 6px; }
     .season-btn { padding: 5px 0; font-size: 0.72rem; }
-    .material-strip { padding: 0 16px 8px; gap: 4px; }
-    .material-btn { padding: 5px 2px; font-size: 0.64rem; gap: 4px; }
     .amb-strip { padding: 0 16px 8px; gap: 4px; }
     .amb-toggle { width: 28px; height: 28px; }
     .amb-btn { padding: 6px 2px; font-size: 0.7rem; }
@@ -220,7 +213,7 @@
     .phone { width: 100%; max-width: 1040px; border-radius: 20px; padding: 0; box-shadow: 0 30px 70px var(--shadow); }
     .phone-inner { border-radius: 20px; display: flex; flex-direction: column; }
     .app-header { padding: 22px 28px 10px; }
-    .view-strip, .season-strip, .material-strip { padding-left: 28px; padding-right: 28px; }
+    .view-strip, .season-strip, .amb-strip { padding-left: 28px; padding-right: 28px; }
 
     .tab-bar { order: -1; border-top: none; border-bottom: 1px solid var(--line); justify-content: flex-start; gap: 4px; padding: 0 24px; }
     .tab-btn { flex: 0 0 auto; flex-direction: row; gap: 7px; padding: 14px 6px; border-bottom: 2px solid transparent; }
@@ -290,13 +283,6 @@
         <button class="season-btn" data-season="winter">Winter</button>
       </div>
 
-      <div class="material-strip" id="materialStrip">
-        <button class="material-btn active" data-material="white" style="--sw:#EDEBDE"><span class="material-dot"></span>White Sand</button>
-        <button class="material-btn" data-material="stone" style="--sw:#C9BC98"><span class="material-dot"></span>Grey Grit</button>
-        <button class="material-btn" data-material="black" style="--sw:#2A2926"><span class="material-dot"></span>Black Sand</button>
-        <button class="material-btn" data-material="clay" style="--sw:#B8703E"><span class="material-dot"></span>Terracotta</button>
-      </div>
-
       <div class="amb-strip" id="ambStrip">
         <button class="amb-toggle" id="soundSwitch" aria-label="Toggle ambient sound">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5V14.5H7.5L12.5 18.5V5.5L7.5 9.5H4Z"/><path d="M16 8.5C17.2 9.9 17.2 14.1 16 15.5"/></svg>
@@ -309,14 +295,6 @@
       <div class="screen garden-screen" id="screen-garden">
 
         <div class="view" id="viewFar">
-          <div class="canvas-wrap" id="canvasWrap">
-            <canvas id="gardenCanvas" width="640" height="860"></canvas>
-            <div class="particles" id="particles"></div>
-            <div class="season-tint" id="seasonTint"></div>
-            <div class="stars" id="stars"></div>
-            <div class="cursor-ghost" id="cursorGhost"></div>
-          </div>
-
           <div class="tool-dock">
             <button class="tool-btn active" data-tool="rake" aria-label="Rake">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13 3L6 11"/><path d="M2 11H10"/><path d="M3 11V16M5.3 11V16M7.6 11V16M9.9 11V16"/></svg>
@@ -345,6 +323,14 @@
           </div>
 
           <div class="variant-row" id="variantRow"></div>
+
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="gardenCanvas" width="640" height="860"></canvas>
+            <div class="particles" id="particles"></div>
+            <div class="season-tint" id="seasonTint"></div>
+            <div class="stars" id="stars"></div>
+            <div class="cursor-ghost" id="cursorGhost"></div>
+          </div>
 
           <div class="action-dock">
             <button class="action-btn" id="undoBtn" aria-label="Undo">
@@ -475,11 +461,11 @@
 
   // ===================== shared materials & helpers =====================
   var SAND_MATERIALS = {
-    white: { top:'#F1EFE6', bottom:'#DEDACB', trench:'#C7C2AE', shadow:'rgba(100,98,84,0.45)', highlight:'rgba(255,255,252,0.92)', grain:'rgba(110,108,92,0.045)' },
-    stone: { top:'#DCD2B8', bottom:'#C9BC98', trench:'#A99A76', shadow:'rgba(88,74,50,0.5)',   highlight:'rgba(255,250,235,0.65)', grain:'rgba(90,78,54,0.06)' },
-    black: { top:'#3C3B37', bottom:'#232220', trench:'#161513', shadow:'rgba(0,0,0,0.55)',     highlight:'rgba(190,186,176,0.5)', grain:'rgba(0,0,0,0.14)' },
-    clay:  { top:'#CC7E4F', bottom:'#A85C36', trench:'#874827', shadow:'rgba(55,25,10,0.55)',  highlight:'rgba(255,224,192,0.7)', grain:'rgba(70,32,12,0.07)' }
+    white: { top:'#F1EFE6', bottom:'#DEDACB', trench:'#C7C2AE', shadow:'rgba(100,98,84,0.45)', highlight:'rgba(255,255,252,0.92)', grain:'rgba(110,108,92,0.045)' }
   };
+  // sand color is no longer user-selectable — it stays on this one neutral base and the
+  // season-tint overlay (mix-blend-mode: soft-light) does all the color variation instead,
+  // so grooves stay legible in every season regardless of tint color/strength
   var sandMaterial = 'white';
 
   // ---- language: EN default, ES second (US market) — shared across both scenes ----
@@ -496,8 +482,6 @@
     viewLevels: { en:'Challenges', es:'Desafíos' },
     seasonSpring: { en:'Spring', es:'Primavera' }, seasonSummer: { en:'Summer', es:'Verano' },
     seasonAutumn: { en:'Autumn', es:'Otoño' }, seasonWinter: { en:'Winter', es:'Invierno' },
-    materialWhite: { en:'White Sand', es:'Arena Blanca' }, materialStone: { en:'Grey Grit', es:'Grava Gris' },
-    materialBlack: { en:'Black Sand', es:'Arena Negra' }, materialClay: { en:'Terracotta', es:'Terracota' },
     toolRake: { en:'Rake', es:'Rastrillo' }, toolRock: { en:'Rock', es:'Roca' }, toolMoss: { en:'Moss', es:'Musgo' },
     toolPlant: { en:'Plant', es:'Planta' }, toolOrnament: { en:'Décor', es:'Decoración' }, toolSmooth: { en:'Smooth', es:'Alisar' },
     actionUndo: { en:'Undo', es:'Deshacer' }, actionClear: { en:'Clear', es:'Limpiar' }, actionRecord: { en:'Record', es:'Grabar' },
@@ -1443,14 +1427,6 @@
       render();
     });
 
-    document.querySelectorAll('.material-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        sandMaterial = btn.getAttribute('data-material');
-        document.querySelectorAll('.material-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
-        render();
-      });
-    });
-
     // ---- day / night ----
     var isNight = false;
     function applyNight(){
@@ -1533,7 +1509,6 @@
     var viewFarEl = document.getElementById('viewFar');
     var viewLevelsEl = document.getElementById('viewLevels');
     var seasonStripEl = document.getElementById('seasonStrip');
-    var materialStripEl = document.getElementById('materialStrip');
     document.querySelectorAll('.view-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -1542,7 +1517,6 @@
         viewFarEl.classList.toggle('hidden', v !== 'far');
         viewLevelsEl.classList.toggle('hidden', v !== 'levels');
         seasonStripEl.style.display = v === 'far' ? 'flex' : 'none';
-        materialStripEl.style.display = v === 'levels' ? 'none' : 'flex';
         if (v === 'levels' && typeof window.onEnterLevels === 'function') window.onEnterLevels();
       });
     });
@@ -1767,10 +1741,6 @@
       document.querySelector('.season-btn[data-season="summer"]').textContent = t('seasonSummer');
       document.querySelector('.season-btn[data-season="autumn"]').textContent = t('seasonAutumn');
       document.querySelector('.season-btn[data-season="winter"]').textContent = t('seasonWinter');
-      setBtnText(document.querySelector('.material-btn[data-material="white"]'), t('materialWhite'));
-      setBtnText(document.querySelector('.material-btn[data-material="stone"]'), t('materialStone'));
-      setBtnText(document.querySelector('.material-btn[data-material="black"]'), t('materialBlack'));
-      setBtnText(document.querySelector('.material-btn[data-material="clay"]'), t('materialClay'));
       setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="rake"]'), t('toolRake'));
       setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="rock"]'), t('toolRock'));
       setBtnText(document.querySelector('#viewFar .tool-btn[data-tool="moss"]'), t('toolMoss'));
