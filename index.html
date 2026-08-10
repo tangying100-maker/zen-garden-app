@@ -406,13 +406,17 @@
         <div class="settings-list">
           <div class="settings-row">
             <div>
-              <div class="settings-row-label" id="soundLabel">Ambient Volume</div>
+              <div class="settings-row-label" id="soundLabel">Background Sound</div>
               <div class="settings-row-sub" id="soundSub">Pick Rain, Ocean or Campfire from the row above the garden</div>
             </div>
           </div>
           <div class="settings-row">
-            <div class="settings-row-label" id="volumeLabel">Volume</div>
+            <div class="settings-row-label" id="volumeLabel">Background Volume</div>
             <input type="range" id="volumeSlider" min="0" max="35" value="18">
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label" id="sandVolumeLabel">Sand Sound Volume</div>
+            <input type="range" id="sandVolumeSlider" min="0" max="150" value="100">
           </div>
           <hr class="settings-divider">
           <div class="settings-row">
@@ -492,9 +496,10 @@
     collectionTitle: { en:'Card Collection', es:'Colección de Cartas' },
     closeCollectionBtn: { en:'← Levels', es:'← Niveles' },
     tabGarden: { en:'Garden', es:'Jardín' }, tabSettings: { en:'Settings', es:'Ajustes' },
-    soundLabel: { en:'Ambient Volume', es:'Volumen Ambiental' },
+    soundLabel: { en:'Background Sound', es:'Sonido de Fondo' },
     soundSub: { en:'Pick Rain, Ocean or Campfire from the row above the garden', es:'Elige Lluvia, Océano o Fogata en la fila sobre el jardín' },
-    volumeLabel: { en:'Volume', es:'Volumen' },
+    volumeLabel: { en:'Background Volume', es:'Volumen de Fondo' },
+    sandVolumeLabel: { en:'Sand Sound Volume', es:'Volumen del Rastrillo' },
     nightLabel: { en:'Day / Night', es:'Día / Noche' },
     resetLabel: { en:'Reset Garden', es:'Reiniciar Jardín' },
     resetSub: { en:'Clears the canvas back to flat, unraked sand', es:'Limpia el lienzo y vuelve a la arena plana sin rastrillar' },
@@ -1305,12 +1310,12 @@
       if (tool === 'rake'){
         currentRake = [p]; requestRender();
         ensureInteractionTextures();
-        rakeTexture.gain.gain.setTargetAtTime(0.32, sfxCtx.currentTime, 0.05);
+        rakeTexture.gain.gain.setTargetAtTime(0.32*sandVolume(), sfxCtx.currentTime, 0.05);
         triggerHaptic(8); startDragHaptic();
       } else if (tool === 'smooth'){
         smoothing = true; smoothAt(p.x, p.y, SMOOTH_RADIUS); requestRender();
         ensureInteractionTextures();
-        smoothTexture.gain.gain.setTargetAtTime(0.18, sfxCtx.currentTime, 0.08);
+        smoothTexture.gain.gain.setTargetAtTime(0.18*sandVolume(), sfxCtx.currentTime, 0.08);
       } else { placeDecor(p); }
     }
     function onMove(e){
@@ -1535,6 +1540,14 @@
     var currentAmbience = 'rain';
     var soundSwitch = document.getElementById('soundSwitch');
     var volumeSlider = document.getElementById('volumeSlider');
+    var sandVolumeSlider = document.getElementById('sandVolumeSlider');
+    function sandVolume(){ return parseInt(sandVolumeSlider.value, 10) / 100; }
+    sandVolumeSlider.addEventListener('input', function(){
+      // live-update the currently sounding stroke, not just the next one, so dragging the
+      // slider while raking gives immediate feedback the same way the background slider does
+      if (currentRake && rakeTexture) rakeTexture.gain.gain.setTargetAtTime(0.32*sandVolume(), sfxCtx.currentTime, 0.05);
+      if (smoothing && smoothTexture) smoothTexture.gain.gain.setTargetAtTime(0.18*sandVolume(), sfxCtx.currentTime, 0.05);
+    });
     var ambiences = {};
 
     function buildAmbience(id){
@@ -1545,11 +1558,15 @@
       sharedNoiseSrc.connect(filter); filter.connect(gain); gain.connect(sfxCtx.destination);
       var amb = { filter: filter, gain: gain };
       if (id === 'rain'){
-        // soft mid-band wash for the base "shhh" — the actual droplet character comes
-        // from scheduleDroplet's high transients layered on top, not from this filter alone
+        // the base wash is trimmed to a faint backdrop (not the main event) — the
+        // "滴滴答答" drizzle character comes from scheduleDroplet's individual ticks,
+        // which need clear space around them to read as separate drops instead of hiss
         filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.55;
+        var washTrim = sfxCtx.createGain(); washTrim.gain.value = 0.32;
+        filter.disconnect(gain);
+        filter.connect(washTrim); washTrim.connect(gain);
         var lfo2 = sfxCtx.createOscillator(); lfo2.frequency.value = 0.2;
-        var lfoGain2 = sfxCtx.createGain(); lfoGain2.gain.value = 0.025;
+        var lfoGain2 = sfxCtx.createGain(); lfoGain2.gain.value = 0.015;
         lfo2.connect(lfoGain2); lfoGain2.connect(gain.gain); lfo2.start();
       } else if (id === 'ocean'){
         filter.type = 'lowpass'; filter.frequency.value = 480; filter.Q.value = 0.35;
@@ -1575,8 +1592,19 @@
     }
     function scheduleDroplet(){
       if (currentAmbience !== 'rain' || !soundOn) return;
-      noiseBurst(0.02+Math.random()*0.015, 1.4, 'highpass', 3400+Math.random()*1600, 900, 2.5, 0.045+Math.random()*0.035);
-      setTimeout(scheduleDroplet, 35+Math.random()*85);
+      var vol = currentVolume();
+      // a higher Q gives each drop a small resonant "tick" pitch instead of a broadband
+      // click, and the wider, sparser spacing (vs. the old 35-85ms) leaves gaps between
+      // drops so it reads as light drizzle rather than continuous static
+      noiseBurst(0.015+Math.random()*0.01, 2.2, 'bandpass', 2600+Math.random()*2400, 700, 5+Math.random()*3, (0.55+Math.random()*0.4)*vol);
+      if (Math.random() < 0.22){
+        // an occasional close double-tap — the little "splash" echo a drop makes on a leaf
+        setTimeout(function(){
+          if (currentAmbience !== 'rain' || !soundOn) return;
+          noiseBurst(0.012, 2.4, 'bandpass', 2200+Math.random()*2000, 600, 5, (0.3+Math.random()*0.2)*vol);
+        }, 35+Math.random()*30);
+      }
+      setTimeout(scheduleDroplet, 110+Math.random()*260);
     }
 
     // hard-stop any ambience that isn't the one just selected: the previous version only
@@ -1720,6 +1748,7 @@
       document.getElementById('soundLabel').textContent = t('soundLabel');
       document.getElementById('soundSub').textContent = t('soundSub');
       document.getElementById('volumeLabel').textContent = t('volumeLabel');
+      document.getElementById('sandVolumeLabel').textContent = t('sandVolumeLabel');
       document.getElementById('nightLabel').textContent = t('nightLabel');
       document.getElementById('resetLabel').textContent = t('resetLabel');
       document.getElementById('resetSub').textContent = t('resetSub');
