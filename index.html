@@ -81,9 +81,9 @@
   .particle.petal { background: #F3A9C0; border-radius: 60% 40% 60% 40%; box-shadow: 0 0 6px rgba(243,169,192,0.7); }
   .particle.leaf { background: #C2661E; border-radius: 2px 10px; box-shadow: 0 0 6px rgba(194,102,30,0.6); }
   .particle.snow { background: #FFFFFF; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.95); }
-  .particle.mote { top: auto; bottom: -6%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF6D8, #FFD873 55%, rgba(255,216,115,0)); box-shadow: 0 0 10px 2px rgba(255,214,110,0.65); animation: rise linear infinite; }
+  .particle.mote { top: auto; bottom: -6%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFEF2, #E8FF6A 50%, rgba(232,255,106,0)); box-shadow: 0 0 18px 5px rgba(226,255,110,0.9); animation: rise linear infinite; }
   @keyframes fall { from { transform: translateY(-10%) translateX(0) rotate(0deg); opacity: 0.95; } to { transform: translateY(720%) translateX(var(--drift)) rotate(160deg); opacity: 0.1; } }
-  @keyframes rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 12% { opacity: 0.95; } 50% { opacity: 0.65; transform: translateY(-360%) translateX(calc(var(--drift) * 0.5)); } 88% { opacity: 0.85; } 100% { transform: translateY(-720%) translateX(var(--drift)); opacity: 0; } }
+  @keyframes rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 12% { opacity: 1; } 50% { opacity: 0.85; transform: translateY(-360%) translateX(calc(var(--drift) * 0.5)); } 88% { opacity: 0.95; } 100% { transform: translateY(-720%) translateX(var(--drift)); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .particle { animation: none; display: none; } }
 
   .season-tint { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0; transition: opacity 0.6s ease, background 0.6s ease; }
@@ -1028,58 +1028,38 @@
         ctx.save();
         ctx.translate(p.x, p.y);
 
-        // soft contact shadow beneath the pad — sells the "floating cloud" niwaki look
-        ctx.beginPath();
-        ctx.ellipse(1.5, p.h*0.55, p.w*0.82, p.h*0.55, 0, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(18,26,14,0.22)';
-        ctx.fill();
-
         var radii = [];
         for (var i = 0; i < 14; i++){
           var ang = (i/14)*Math.PI*2;
           var ellipseR = (p.w*p.h) / Math.sqrt(Math.pow(p.h*Math.cos(ang),2) + Math.pow(p.w*Math.sin(ang),2));
           radii.push(ellipseR * (1 + Math.sin(ang*3+pi)*0.08));
         }
-        smoothBlobPathOn(ctx, radii, 1);
+        smoothBlobPathOn(ctx, radii, 0.88);
         var pg = ctx.createLinearGradient(-p.w, -p.h, p.w, p.h);
-        pg.addColorStop(0, '#628356'); pg.addColorStop(1, '#223420');
+        pg.addColorStop(0, '#5C7C50'); pg.addColorStop(1, '#243620');
         ctx.fillStyle = pg;
         ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(16,24,12,0.4)';
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = 'rgba(16,24,12,0.28)';
         ctx.stroke();
 
-        // rim highlight, offset toward the implied light source, to give the pad volume
+        // soft highlight offset toward the implied light source, to give the pad volume
+        // without the harder rim/shadow shapes that read as clutter at this scale
         ctx.save();
-        ctx.globalAlpha = 0.3;
-        ctx.translate(-p.w*0.18, -p.h*0.4);
-        var hlRadii = radii.map(function(r){ return r*0.5; });
-        smoothBlobPathOn(ctx, hlRadii, 1);
-        ctx.fillStyle = '#A8C88E';
+        ctx.globalAlpha = 0.22;
+        ctx.translate(-p.w*0.2, -p.h*0.35);
+        var hlRadii = radii.map(function(r){ return r*0.45; });
+        smoothBlobPathOn(ctx, hlRadii, 0.88);
+        ctx.fillStyle = '#9CBE86';
         ctx.fill();
         ctx.restore();
 
-        // needle-cluster ticks around the rim
-        for (var nt = 0; nt < 11; nt++){
-          var tang = (nt/11)*Math.PI*2 + pi*0.7;
-          var tr = p.w*0.8;
-          var tx = Math.cos(tang)*tr, ty = Math.sin(tang)*tr*(p.h/p.w);
-          ctx.save();
-          ctx.translate(tx, ty);
-          ctx.rotate(tang + (rnd()-0.5)*0.4);
-          ctx.beginPath();
-          ctx.moveTo(0, 0); ctx.lineTo(3.2+rnd()*1.4, 0);
-          ctx.strokeStyle = 'rgba(16,24,12,0.42)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.restore();
-        }
         // surface speckle for texture
-        for (var s = 0; s < 12; s++){
-          var sang = rnd()*Math.PI*2, srad = rnd()*p.w*0.68;
+        for (var s = 0; s < 14; s++){
+          var sang = rnd()*Math.PI*2, srad = rnd()*p.w*0.72;
           ctx.beginPath();
           ctx.arc(Math.cos(sang)*srad, Math.sin(sang)*srad*(p.h/p.w), 1, 0, Math.PI*2);
-          ctx.fillStyle = 'rgba(18,28,14,0.3)';
+          ctx.fillStyle = 'rgba(20,30,14,0.3)';
           ctx.fill();
         }
         ctx.restore();
@@ -1468,7 +1448,7 @@
 
     var SEASON_TINTS = {
       spring: 'rgba(255,175,205,0.5)',
-      summer: 'rgba(255,221,120,0.24)',
+      summer: 'rgba(255,221,120,0.4)',
       autumn: 'rgba(255,135,50,0.48)',
       winter: 'rgba(180,212,255,0.44)'
     };
@@ -1484,16 +1464,16 @@
       particlesWrap.innerHTML = '';
       if (reduceMotion) return;
       var cls = season === 'spring' ? 'petal' : season === 'autumn' ? 'leaf' : season === 'winter' ? 'snow' : 'mote';
-      var count = season === 'winter' ? 34 : season === 'summer' ? 24 : 28;
+      var count = season === 'winter' ? 34 : season === 'summer' ? 30 : 28;
       for (var i = 0; i < count; i++){
         var p = document.createElement('div');
         p.className = 'particle ' + cls;
         p.style.left = (Math.random()*96) + '%';
         p.style.setProperty('--drift', (Math.random()*70 - 35) + 'px');
-        var dur = season === 'winter' ? (8 + Math.random()*7) : season === 'summer' ? (6 + Math.random()*6) : (5.5 + Math.random()*5);
+        var dur = season === 'winter' ? (8 + Math.random()*7) : season === 'summer' ? (7 + Math.random()*7) : (5.5 + Math.random()*5);
         p.style.animationDuration = dur + 's';
         p.style.animationDelay = (-Math.random()*dur) + 's';
-        var size = season === 'summer' ? (4 + Math.random()*5) : (13 + Math.random()*11);
+        var size = season === 'summer' ? (10 + Math.random()*9) : (13 + Math.random()*11);
         p.style.width = size + 'px'; p.style.height = size + 'px';
         particlesWrap.appendChild(p);
       }
@@ -1605,8 +1585,14 @@
     function silenceAmbience(id){
       var amb = ambiences[id];
       if (!amb) return;
-      amb.gain.gain.cancelScheduledValues(sfxCtx.currentTime);
-      amb.gain.gain.setTargetAtTime(0, sfxCtx.currentTime, 0.06);
+      // linearRampToValueAtTime reaches an exact 0, unlike setTargetAtTime's asymptotic
+      // decay (which never truly hits 0) — with several LFO-modulated ambiences that
+      // could each be left at a tiny non-zero gain forever, their residual tails summed
+      // into an audible, un-mutable low whoosh
+      var now = sfxCtx.currentTime;
+      amb.gain.gain.cancelScheduledValues(now);
+      amb.gain.gain.setValueAtTime(amb.gain.gain.value, now);
+      amb.gain.gain.linearRampToValueAtTime(0, now + 0.08);
     }
 
     function setAmbience(id, skipFade){
