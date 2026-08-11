@@ -43,9 +43,11 @@
   .phone-inner { border-radius: 24px; overflow: hidden; background: var(--paper); position: relative; }
 
   .app-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; }
-  .app-title { display: flex; align-items: baseline; gap: 8px; }
+  .app-title { display: flex; flex-direction: column; gap: 2px; }
+  .app-title-row { display: flex; align-items: baseline; gap: 8px; }
   .app-title h2 { font-family: "Iowan Old Style", "Songti SC", "Noto Serif SC", Georgia, serif; font-size: 1.2rem; margin: 0; }
   .season-badge { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--water); background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; padding: 3px 9px; }
+  .site-url { font-family: "SF Mono", SFMono-Regular, Consolas, monospace; font-size: 0.68rem; letter-spacing: 0.02em; color: var(--ink-soft); }
   .icon-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .icon-btn svg { width: 17px; height: 17px; }
   .icon-btn:hover { color: var(--ink); }
@@ -259,8 +261,11 @@
     <div class="phone-inner">
       <div class="app-header">
         <div class="app-title">
-          <h2 id="appTitleH2">My Garden</h2>
-          <span class="season-badge" id="seasonBadge">Summer · Evergreen</span>
+          <div class="app-title-row">
+            <h2 id="appTitleH2">My Garden</h2>
+            <span class="season-badge" id="seasonBadge">Summer · Evergreen</span>
+          </div>
+          <div class="site-url">virtual-zen-garden.com</div>
         </div>
         <div style="display:flex; gap:8px;">
           <button class="icon-btn" id="langBtn" aria-label="Switch language" style="width:auto; padding:0 10px; font-family:'SF Mono',monospace; font-size:0.72rem;">ES</button>
@@ -2206,11 +2211,13 @@
     var guideSamples = [];
     var userStrokes = [];
     var currentStroke = null;
+    var onPathCount = 0, drawnCount = 0;
 
     function startLevel(level){
       currentLevel = level;
       userStrokes = [];
       currentStroke = null;
+      onPathCount = 0; drawnCount = 0;
       guidePaths = level.generator(levelW, levelH, level.params);
       guideSamples = [];
       guidePaths.forEach(function(strokePts){
@@ -2245,13 +2252,24 @@
 
     function updateCoverage(pts){
       pts.forEach(function(pt){
+        // pure proximity-to-guide scoring has no penalty for drawing off the path —
+        // it only ever adds credit, never subtracts — so a big scribble that happens
+        // to sweep through a dense/looping pattern's bounding area can rack up "covered"
+        // samples without ever following the actual shape. Track what fraction of the
+        // user's own drawn points were anywhere near the guide at all, and gate the win
+        // on that too — that's what actually distinguishes tracing from scribbling.
+        drawnCount++;
+        var nearAny = false;
         guideSamples.forEach(function(s){
+          var d = Math.hypot(s.x-pt.x, s.y-pt.y);
           // tolerance must stay smaller than the spacing between neighboring guide
           // samples — otherwise one touch also marks its untouched neighbors as
           // "covered", which is what let the level finish before you'd actually
           // traced the whole pattern
-          if (!s.covered && Math.hypot(s.x-pt.x, s.y-pt.y) < 11) s.covered = true;
+          if (!s.covered && d < 13) s.covered = true;
+          if (d < 26) nearAny = true;
         });
+        if (nearAny) onPathCount++;
       });
     }
     function coveragePercent(){
@@ -2259,8 +2277,19 @@
       var c = 0; guideSamples.forEach(function(s){ if (s.covered) c++; });
       return c/guideSamples.length;
     }
+    function onPathRatio(){
+      if (!drawnCount) return 1;
+      return onPathCount/drawnCount;
+    }
+    // shows progress toward whichever win condition is currently the tighter constraint —
+    // showing raw coveragePercent alone let a scribble read "100%" and then just sit there
+    // not winning, which looked like the level was broken rather than telling the user
+    // they need to actually stay on the guide
+    function progressPercent(){
+      return Math.max(0, Math.min(1, Math.min(coveragePercent()/0.88, onPathRatio()/0.6)));
+    }
     function updateProgress(){
-      var pct = Math.round(coveragePercent()*100);
+      var pct = Math.round(progressPercent()*100);
       progressFill.style.width = pct + '%';
       progressLabel.textContent = pct + '%';
     }
@@ -2320,7 +2349,7 @@
       updateCoverage(samples);
       updateProgress();
       render_();
-      if (coveragePercent() >= 0.88 && winOverlay.classList.contains('hidden')) winLevel();
+      if (coveragePercent() >= 0.88 && onPathRatio() >= 0.6 && winOverlay.classList.contains('hidden')) winLevel();
     }
     function onUp(){
       if (currentStroke && currentStroke.length > 1) userStrokes.push(currentStroke);
