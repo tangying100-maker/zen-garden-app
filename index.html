@@ -1807,19 +1807,24 @@
           // Roll) and, if installed, TikTok itself as a direct share target
           var file;
           try { file = new File([blob], filename, { type: blobType }); } catch(e){ file = null; }
+          console.log('[zen-garden] clip ready:', { size: blob.size, type: blobType, filename: filename });
           if (file && navigator.canShare && navigator.canShare({ files: [file] })){
             cfg.shareBtn.classList.remove('hidden');
             cfg.shareBtn.onclick = function(){
-              navigator.share({ files: [file], title: 'Zen Garden clip' }).catch(function(err){
+              // title omitted deliberately — some browsers reject a file share that also
+              // carries a title/text field, especially for video/mp4 payloads
+              navigator.share({ files: [file] }).catch(function(err){
                 // AbortError just means the user closed the share sheet without picking
                 // anything — that's normal and not worth a toast. Anything else means the
                 // share genuinely failed, and silently swallowing it is exactly why tapping
                 // the button looked like it did nothing.
+                console.error('[zen-garden] share failed:', err && err.name, err && err.message);
                 if (err && err.name === 'AbortError') return;
                 showToast(t('shareFailed'));
               });
             };
           } else {
+            console.log('[zen-garden] share not offered — canShare said no for this file');
             cfg.shareBtn.classList.add('hidden');
           }
         };
