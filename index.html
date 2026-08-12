@@ -518,7 +518,8 @@
     aboutNote: { en:"This prototype is for validating the look and feel — it isn't wired to real payments, accounts, or cloud sync yet; that comes with the production app.", es:'Este es un prototipo para validar la dirección visual y la sensación general — aún no está conectado a pagos reales, cuentas o sincronización en la nube; eso llegará con la app de producción.' },
     resetToast: { en:'Reset to flat, unraked sand', es:'Reiniciado a arena plana sin rastrillar' },
     ambRain: { en:'Rain', es:'Lluvia' }, ambOcean: { en:'Ocean', es:'Océano' }, ambCampfire: { en:'Campfire', es:'Fogata' },
-    recordUnsupported: { en:"This browser can't record locally — the real app will use a native solution", es:'Este navegador no puede grabar localmente — la app real usará una solución nativa' }
+    recordUnsupported: { en:"This browser can't record locally — the real app will use a native solution", es:'Este navegador no puede grabar localmente — la app real usará una solución nativa' },
+    shareFailed: { en:"Couldn't share the clip — try Download instead", es:'No se pudo compartir el clip — prueba Descargar' }
   };
   function t(key){ var e = STR[key]; return e ? (e[LANG] || e.en) : key; }
   function setBtnText(el, text){
@@ -1749,7 +1750,13 @@
           cfg.btn.classList.remove('recording');
           setBtnText(cfg.btn, t('actionRecord'));
           cfg.status.classList.add('hidden');
-          var blobType = mime || 'video/webm';
+          // recorder.mimeType is what the browser actually used, not just what we asked
+          // for — Safari's isTypeSupported() has been unreliable across versions (can
+          // report false for every candidate we try, including mp4), and trusting our
+          // own pre-recording guess over the browser's own answer is what mislabeled
+          // clips as "video/webm" even when Safari had recorded real mp4/h264 bytes,
+          // which is likely why iOS wasn't offering a real "Save Video" action for it
+          var blobType = recorder.mimeType || mime || 'video/webm';
           var ext = extFor(blobType);
           var filename = 'zen-garden-clip.' + ext;
           var blob = new Blob(chunks, { type: blobType });
@@ -1767,7 +1774,14 @@
           if (file && navigator.canShare && navigator.canShare({ files: [file] })){
             cfg.shareBtn.classList.remove('hidden');
             cfg.shareBtn.onclick = function(){
-              navigator.share({ files: [file], title: 'Zen Garden clip' }).catch(function(){});
+              navigator.share({ files: [file], title: 'Zen Garden clip' }).catch(function(err){
+                // AbortError just means the user closed the share sheet without picking
+                // anything — that's normal and not worth a toast. Anything else means the
+                // share genuinely failed, and silently swallowing it is exactly why tapping
+                // the button looked like it did nothing.
+                if (err && err.name === 'AbortError') return;
+                showToast(t('shareFailed'));
+              });
             };
           } else {
             cfg.shareBtn.classList.add('hidden');
