@@ -1828,7 +1828,12 @@
             cfg.shareBtn.classList.add('hidden');
           }
         };
-        recorder.start();
+        // a timeslice makes ondataavailable fire periodically instead of accumulating
+        // everything into one giant buffer only handed over at stop() — mobile Safari in
+        // particular has had reliability issues finalizing a single large MediaRecorder
+        // buffer on longer clips, which can produce a file that canShare() said yes to
+        // but share() then rejects as invalid
+        recorder.start(1000);
         // safety cap only, not the primary stop mechanism — a stray tab can otherwise
         // record forever and balloon memory if the user never comes back to stop it
         maxTimer = setTimeout(function(){ if (recorder.state !== 'inactive') recorder.stop(); }, 90000);
